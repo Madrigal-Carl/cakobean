@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/features/farm/data/models/farm.dart';
 import 'package:cakobean/features/farm/presentation/widgets/farm_card.dart';
+import 'package:cakobean/features/farm/presentation/widgets/farm_sheet.dart';
 import 'package:cakobean/shared/widgets/add_button.dart';
 import 'package:cakobean/shared/widgets/empty_state.dart';
 import 'package:cakobean/shared/widgets/page_header.dart';
@@ -27,13 +28,7 @@ class _FarmPageState extends State<FarmPage> {
   List<FarmModel> get _filteredFarms {
     if (_query.trim().isEmpty) return mockFarms;
     final q = _query.toLowerCase();
-    return mockFarms
-        .where(
-          (f) =>
-              f.name.toLowerCase().contains(q) ||
-              f.address.toLowerCase().contains(q),
-        )
-        .toList();
+    return mockFarms.where((f) => f.address.toLowerCase().contains(q)).toList();
   }
 
   @override
@@ -46,8 +41,9 @@ class _FarmPageState extends State<FarmPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: AddButton(
         ext: ext,
-        onTap: () {
-          // TODO: navigate to add-farm flow
+        onTap: () async {
+          final result = await showFarmSheet(context);
+          if (result == null) return;
         },
       ),
       body: SafeArea(
