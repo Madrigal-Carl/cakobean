@@ -62,7 +62,7 @@ class _ArticleCarouselState extends State<ArticleCarousel> {
       child: Column(
         children: [
           SizedBox(
-            height: 160,
+            height: 150,
             child: PageView.builder(
               controller: _controller,
               itemCount: mockCarouselArticles.length,
@@ -70,11 +70,28 @@ class _ArticleCarouselState extends State<ArticleCarousel> {
               itemBuilder: (context, i) {
                 final article = mockCarouselArticles[i];
                 return ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Container(color: article.color),
+                      Image.network(
+                        article.imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Container(
+                            color: article.color,
+                            alignment: Alignment.center,
+                            child: const CircularProgressIndicator(
+                              color: Colors.white70,
+                              strokeWidth: 2,
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(color: article.color);
+                        },
+                      ),
                       DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -94,15 +111,6 @@ class _ArticleCarouselState extends State<ArticleCarousel> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              article.label,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
                             const SizedBox(height: AppSpacing.x1),
                             Text(
                               article.title,

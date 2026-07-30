@@ -1,34 +1,31 @@
 import 'package:flutter/material.dart';
 
-/// Model backing a single card in the "Newest Article" carousel
-/// on the home page.
 class ArticleModel {
-  final String label;
   final String title;
+  final String imageUrl;
   final Color color;
 
   const ArticleModel({
-    required this.label,
     required this.title,
+    required this.imageUrl,
     required this.color,
   });
 }
 
-/// Temporary mock data until this is wired to a real data source.
 const mockCarouselArticles = [
   ArticleModel(
-    label: 'ARTICLE',
     title: 'Shade Tree Management for Sustainable Cacao Farming',
+    imageUrl: 'https://picsum.photos/seed/shade-tree-cacao/800/600',
     color: Color(0xFF3B6E91),
   ),
   ArticleModel(
-    label: 'ARTICLE',
     title: 'Post-Harvest Fermentation Techniques',
+    imageUrl: 'https://picsum.photos/seed/cacao-fermentation/800/600',
     color: Color(0xFF6E4B3B),
   ),
   ArticleModel(
-    label: 'ARTICLE',
     title: 'Improving Yield with Proper Pruning',
+    imageUrl: 'https://picsum.photos/seed/cacao-pruning/800/600',
     color: Color(0xFF3B914E),
   ),
 ];
