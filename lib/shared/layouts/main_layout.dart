@@ -9,8 +9,8 @@ class MainLayout extends StatelessWidget {
 
   int _locationToIndex(String location) {
     if (location.startsWith('/farm')) return 1;
-    if (location.startsWith('/logistics')) return 2;
-    if (location.startsWith('/hub')) return 3;
+    if (location.startsWith('/hub')) return 2;
+    if (location.startsWith('/logistics')) return 3;
     if (location.startsWith('/profile')) return 4;
     return 0;
   }
@@ -24,10 +24,10 @@ class MainLayout extends StatelessWidget {
         context.go('/farm');
         break;
       case 2:
-        context.go('/logistics');
+        context.go('/hub');
         break;
       case 3:
-        context.go('/hub');
+        context.go('/logistics');
         break;
       case 4:
         context.go('/profile');
@@ -53,14 +53,14 @@ class MainLayout extends StatelessWidget {
         label: 'Farm',
       )),
       (_NavItemData(
-        icon: Icons.local_shipping_outlined,
-        activeIcon: Icons.local_shipping,
-        label: 'Logistics',
-      )),
-      (_NavItemData(
         icon: Icons.menu_book_outlined,
         activeIcon: Icons.menu_book,
         label: 'Hub',
+      )),
+      (_NavItemData(
+        icon: Icons.local_shipping_outlined,
+        activeIcon: Icons.local_shipping,
+        label: 'Logistics',
       )),
       (_NavItemData(
         icon: Icons.person_outline,
