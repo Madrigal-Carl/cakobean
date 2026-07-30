@@ -43,6 +43,7 @@ class AppColors {
   static const Color marigold = Color(0xFFFFD24A);
 
   // Light mode — straight from DESIGN.md §3
+  static const Color cardSurfaceLight = Color(0xFFFFFFFF);
   static const Color creamLight = Color(0xFFFFFAF2); // surface
   static const Color sandLight = Color(0xFFF7F1E8); // neutral / inputs
   static const Color cocoaLight = Color(0xFF241813); // primary / text
@@ -50,6 +51,7 @@ class AppColors {
   static const Color hairlineLight = Color(0x12241813); // rgba(36,24,19,.07)
 
   // Dark mode — extrapolated, not in DESIGN.md
+  static const Color cardSurfaceDark = Color(0xFF2A1D17);
   static const Color creamDark = Color(0xFF1A1210); // canvas
   static const Color sandDark = Color(
     0xFF241813,
@@ -183,6 +185,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
   final Color ember;
   final Color pumpkin;
   final Color marigold;
+  final Color cardSurface;
   final List<BoxShadow> cardShadow;
   final List<BoxShadow> buttonShadow;
   final Gradient primaryGradient;
@@ -196,6 +199,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     required this.ember,
     required this.pumpkin,
     required this.marigold,
+    required this.cardSurface,
     required this.cardShadow,
     required this.buttonShadow,
     required this.primaryGradient,
@@ -211,6 +215,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     Color? ember,
     Color? pumpkin,
     Color? marigold,
+    Color? cardSurface,
     List<BoxShadow>? cardShadow,
     List<BoxShadow>? buttonShadow,
     Gradient? primaryGradient,
@@ -224,6 +229,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
       ember: ember ?? this.ember,
       pumpkin: pumpkin ?? this.pumpkin,
       marigold: marigold ?? this.marigold,
+      cardSurface: cardSurface ?? this.cardSurface,
       cardShadow: cardShadow ?? this.cardShadow,
       buttonShadow: buttonShadow ?? this.buttonShadow,
       primaryGradient: primaryGradient ?? this.primaryGradient,
@@ -239,6 +245,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
       cocoa: Color.lerp(cocoa, other.cocoa, t)!,
       cocoa50: Color.lerp(cocoa50, other.cocoa50, t)!,
       hairline: Color.lerp(hairline, other.hairline, t)!,
+      cardSurface: Color.lerp(cardSurface, other.cardSurface, t)!,
       ember: ember,
       pumpkin: pumpkin,
       marigold: marigold,
@@ -261,6 +268,7 @@ class AppTheme {
       ember: AppColors.ember,
       pumpkin: AppColors.pumpkin,
       marigold: AppColors.marigold,
+      cardSurface: AppColors.cardSurfaceLight,
       cardShadow: AppShadows.card,
       buttonShadow: AppShadows.button,
       primaryGradient: AppGradients.primary,
@@ -300,6 +308,7 @@ class AppTheme {
       ember: AppColors.ember,
       pumpkin: AppColors.pumpkin,
       marigold: AppColors.marigold,
+      cardSurface: AppColors.cardSurfaceDark,
       cardShadow: AppShadows.card,
       buttonShadow: AppShadows.button,
       primaryGradient: AppGradients.primary,

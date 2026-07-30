@@ -27,7 +27,7 @@ class FarmCard extends StatelessWidget {
             AppSpacing.x3,
           ),
           decoration: BoxDecoration(
-            color: ext.sand,
+            color: ext.cardSurface,
             borderRadius: BorderRadius.circular(AppRadius.md),
             boxShadow: ext.cardShadow,
           ),

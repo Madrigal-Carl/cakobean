@@ -152,7 +152,7 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
             bottom: 160,
             child: FloatingActionButton.small(
               heroTag: 'use-current-location',
-              backgroundColor: ext.sand,
+              backgroundColor: ext.cardSurface,
               foregroundColor: ext.cocoa,
               onPressed: _locating ? null : _useCurrentLocation,
               child: _locating
@@ -174,7 +174,7 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
                 margin: const EdgeInsets.all(AppSpacing.x4),
                 padding: const EdgeInsets.all(AppSpacing.x4),
                 decoration: BoxDecoration(
-                  color: ext.sand,
+                  color: ext.cardSurface,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   boxShadow: ext.cardShadow,
                 ),
