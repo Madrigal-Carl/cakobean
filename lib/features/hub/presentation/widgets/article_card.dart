@@ -1,29 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/shared/widgets/stat_chip.dart';
 import '../../data/models/article.dart';
 
-/// A single row in the hub's article list: thumbnail + title + description
-/// + one [StatChip] per tag. Used only on [HubPage].
 class ArticleCard extends StatelessWidget {
   final ArticleModel article;
   final AppThemeExtension ext;
-  final VoidCallback? onTap;
 
-  const ArticleCard({
-    super.key,
-    required this.article,
-    required this.ext,
-    this.onTap,
-  });
+  const ArticleCard({super.key, required this.article, required this.ext});
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
     return InkWell(
-      onTap: onTap,
+      onTap: () => context.push('/hub/article/${article.id}', extra: article),
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.x3),
@@ -77,6 +70,12 @@ class ArticleCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.x2),
+                  _ArticleStats(
+                    ext: ext,
+                    reactionCount: article.reactionCount,
+                    commentCount: article.commentCount,
+                  ),
+                  const SizedBox(height: AppSpacing.x2),
                   _TagRow(ext: ext, tags: article.tags),
                 ],
               ),
@@ -88,9 +87,75 @@ class ArticleCard extends StatelessWidget {
   }
 }
 
-/// Renders up to 2 tag chips, plus a "+N more" chip if there are more —
-/// keeps the tag row to a single line regardless of how many tags an
-/// article has. Scrolls horizontally if it doesn't fit.
+/// Reaction (insightful) + comment counts, left-aligned with [_TagRow]
+/// in the article's right-hand text column.
+class _ArticleStats extends StatelessWidget {
+  final AppThemeExtension ext;
+  final int reactionCount;
+  final int commentCount;
+
+  const _ArticleStats({
+    required this.ext,
+    required this.reactionCount,
+    required this.commentCount,
+  });
+
+  static String _format(int count) {
+    if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(count % 1000 >= 100 ? 1 : 0)}k';
+    }
+    return '$count';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _StatItem(
+          ext: ext,
+          icon: Icons.emoji_objects_outlined, // insightful/brain reaction
+          count: _format(reactionCount),
+        ),
+        const SizedBox(width: AppSpacing.x3),
+        _StatItem(
+          ext: ext,
+          icon: Icons.mode_comment_outlined,
+          count: _format(commentCount),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final AppThemeExtension ext;
+  final IconData icon;
+  final String count;
+
+  const _StatItem({required this.ext, required this.icon, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 15, color: ext.cocoa50),
+        const SizedBox(width: 4),
+        Text(
+          count,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            color: ext.cocoa50,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// _TagRow and _MoreTagsChip unchanged from your version.
 class _TagRow extends StatelessWidget {
   final AppThemeExtension ext;
   final List<ArticleTag> tags;
@@ -127,7 +192,6 @@ class _TagRow extends StatelessWidget {
   }
 }
 
-/// "+N more" chip shown when an article has more tags than fit inline.
 class _MoreTagsChip extends StatelessWidget {
   final AppThemeExtension ext;
   final int count;

@@ -5,6 +5,8 @@ import 'package:cakobean/features/auth/presentation/pages/register_page.dart';
 import 'package:cakobean/features/home/presentation/pages/home_page.dart';
 import 'package:cakobean/features/farm/presentation/pages/farm_page.dart';
 import 'package:cakobean/features/hub/presentation/pages/hub_page.dart';
+import 'package:cakobean/features/hub/data/models/article.dart';
+import 'package:cakobean/features/hub/presentation/pages/article_detail.dart';
 import 'package:cakobean/features/logistics/presentation/pages/logistics_page.dart';
 import 'package:cakobean/features/profile/presentation/pages/profile_page.dart';
 import 'package:cakobean/shared/layouts/main_layout.dart';
@@ -22,7 +24,19 @@ final GoRouter appRouter = GoRouter(
       routes: [
         GoRoute(path: '/home', builder: (context, state) => const HomePage()),
         GoRoute(path: '/farm', builder: (context, state) => const FarmPage()),
-        GoRoute(path: '/hub', builder: (context, state) => const HubPage()),
+        GoRoute(
+          path: '/hub',
+          builder: (context, state) => const HubPage(),
+          routes: [
+            GoRoute(
+              path: 'article/:id',
+              builder: (context, state) => ArticleDetail(
+                articleId: state.pathParameters['id']!,
+                article: state.extra as ArticleModel?,
+              ),
+            ),
+          ],
+        ),
         GoRoute(
           path: '/logistics',
           builder: (context, state) => const LogisticsPage(),
