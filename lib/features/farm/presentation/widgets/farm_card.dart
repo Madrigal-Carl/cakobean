@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/features/farm/data/models/farm.dart';
-import './stat_chip.dart';
+import 'package:cakobean/shared/widgets/stat_chip.dart';
 
 class FarmCard extends StatelessWidget {
   final FarmModel farm;
