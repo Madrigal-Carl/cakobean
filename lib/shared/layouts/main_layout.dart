@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:go_router/go_router.dart';
+
+import 'package:cakobean/app/theme/app_theme.dart';
 
 class MainLayout extends StatelessWidget {
   final Widget child;
@@ -8,8 +9,8 @@ class MainLayout extends StatelessWidget {
 
   int _locationToIndex(String location) {
     if (location.startsWith('/farm')) return 1;
-    if (location.startsWith('/hub')) return 2;
-    if (location.startsWith('/logistics')) return 3;
+    if (location.startsWith('/logistics')) return 2;
+    if (location.startsWith('/hub')) return 3;
     if (location.startsWith('/profile')) return 4;
     return 0;
   }
@@ -23,10 +24,10 @@ class MainLayout extends StatelessWidget {
         context.go('/farm');
         break;
       case 2:
-        context.go('/hub');
+        context.go('/logistics');
         break;
       case 3:
-        context.go('/logistics');
+        context.go('/hub');
         break;
       case 4:
         context.go('/profile');
@@ -37,20 +38,92 @@ class MainLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
+    final ext = Theme.of(context).extension<AppThemeExtension>()!;
+    final currentIndex = _locationToIndex(location);
+
+    const items = [
+      (_NavItemData(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home,
+        label: 'Home',
+      )),
+      (_NavItemData(
+        icon: Icons.eco_outlined,
+        activeIcon: Icons.eco,
+        label: 'Farm',
+      )),
+      (_NavItemData(
+        icon: Icons.local_shipping_outlined,
+        activeIcon: Icons.local_shipping,
+        label: 'Logistics',
+      )),
+      (_NavItemData(
+        icon: Icons.menu_book_outlined,
+        activeIcon: Icons.menu_book,
+        label: 'Hub',
+      )),
+      (_NavItemData(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: 'Profile',
+      )),
+    ];
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: CurvedNavigationBar(
-        index: _locationToIndex(location),
-        onTap: (index) => _onTap(context, index),
-        items: const [
-          Icon(Icons.home, size: 28),
-          Icon(Icons.agriculture, size: 28),
-          Icon(Icons.hub, size: 28),
-          Icon(Icons.local_shipping, size: 28),
-          Icon(Icons.person, size: 28),
-        ],
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          height: 68,
+          decoration: BoxDecoration(
+            color: ext.cream,
+            border: Border(top: BorderSide(color: ext.hairline)),
+          ),
+          child: Row(
+            children: List.generate(items.length, (i) {
+              final selected = i == currentIndex;
+              final item = items[i];
+              return Expanded(
+                child: InkWell(
+                  onTap: () => _onTap(context, i),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        selected ? item.activeIcon : item.icon,
+                        color: selected ? AppColors.ember : ext.cocoa50,
+                        size: 22,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: selected ? AppColors.ember : ext.cocoa50,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
       ),
     );
   }
+}
+
+class _NavItemData {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const _NavItemData({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 }
