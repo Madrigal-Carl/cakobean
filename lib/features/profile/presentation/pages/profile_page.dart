@@ -5,6 +5,7 @@ import 'package:cakobean/app/theme/app_theme.dart';
 import '../../data/models/profile.dart';
 import '../widgets/profile_row.dart';
 import '../widgets/profile_section.dart';
+import '../widgets/theme_mode_toggle.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -63,6 +64,9 @@ class ProfilePage extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: ext.cocoa50),
               ),
+              const SizedBox(height: AppSpacing.x3),
+              // ---- Theme mode toggle ----
+              const ThemeModeToggleButton(),
               const SizedBox(height: AppSpacing.x6),
               // ---- About You ----
               ProfileSection(
