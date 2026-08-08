@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/shared/widgets/page_header.dart';
 import 'package:cakobean/shared/widgets/empty_state.dart';
+import 'package:cakobean/shared/widgets/stagger_in.dart';
 import '../../data/models/article.dart';
 import '../widgets/article_card.dart';
 import '../widgets/tag_filter_chip.dart';
@@ -127,7 +128,10 @@ class _HubPageState extends State<HubPage> {
                       separatorBuilder: (context, i) =>
                           Divider(color: ext.hairline, height: 1),
                       itemBuilder: (context, i) {
-                        return ArticleCard(article: articles[i], ext: ext);
+                        return StaggerIn(
+                          index: i,
+                          child: ArticleCard(article: articles[i], ext: ext),
+                        );
                       },
                     ),
             ),

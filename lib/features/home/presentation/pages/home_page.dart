@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
+import 'package:cakobean/shared/widgets/stagger_in.dart';
 import '../widgets/home_header.dart';
 import '../widgets/article_carousel.dart';
 import '../widgets/recent_article.dart';
@@ -29,14 +30,32 @@ class HomePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: AppSpacing.x5),
-                    Text('Newest Article', style: textTheme.headlineSmall),
+                    StaggerIn(
+                      index: 0,
+                      child: Text(
+                        'Newest Article',
+                        style: textTheme.headlineSmall,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.x2),
-                    const ArticleCarousel(),
+                    const StaggerIn(index: 1, child: ArticleCarousel()),
                     const SizedBox(height: AppSpacing.x5),
-                    Text('Recent Articles', style: textTheme.headlineSmall),
+                    StaggerIn(
+                      index: 2,
+                      child: Text(
+                        'Recent Articles',
+                        style: textTheme.headlineSmall,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.x2),
-                    ...mockRecentArticles.map(
-                      (a) => RecentArticleTile(article: a, ext: ext),
+                    ...mockRecentArticles.asMap().entries.map(
+                      (entry) => StaggerIn(
+                        index: entry.key + 3,
+                        child: RecentArticleTile(
+                          article: entry.value,
+                          ext: ext,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.x6),
                   ],

@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:cakobean/features/auth/presentation/pages/login_page.dart';
@@ -12,52 +13,88 @@ import 'package:cakobean/features/hub/presentation/pages/article_detail.dart';
 import 'package:cakobean/features/logistics/presentation/pages/logistics_page.dart';
 import 'package:cakobean/features/profile/presentation/pages/profile_page.dart';
 import 'package:cakobean/shared/layouts/main_layout.dart';
+import 'package:cakobean/shared/navigation/page_transitions.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/login',
   routes: [
-    GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+    GoRoute(
+      path: '/login',
+      pageBuilder: (context, state) => FadeSlidePage<void>(
+        key: state.pageKey,
+        child: const LoginPage(),
+      ),
+    ),
     GoRoute(
       path: '/register',
-      builder: (context, state) => const RegisterPage(),
+      pageBuilder: (context, state) => FadeSlidePage<void>(
+        key: state.pageKey,
+        child: const RegisterPage(),
+      ),
     ),
     ShellRoute(
       builder: (context, state, child) => MainLayout(child: child),
       routes: [
-        GoRoute(path: '/home', builder: (context, state) => const HomePage()),
+        GoRoute(
+          path: '/home',
+          pageBuilder: (context, state) => FadeSlidePage<void>(
+            key: state.pageKey,
+            child: const HomePage(),
+          ),
+        ),
         GoRoute(
           path: '/farm',
-          builder: (context, state) => const FarmPage(),
+          pageBuilder: (context, state) => FadeSlidePage<void>(
+            key: state.pageKey,
+            child: const FarmPage(),
+          ),
           routes: [
             GoRoute(
               path: ':id',
-              builder: (context, state) => FarmDetail(
-                farmId: state.pathParameters['id']!,
-                farm: state.extra as FarmModel?,
+              pageBuilder: (context, state) => FadeSlidePage<void>(
+                key: state.pageKey,
+                child: FarmDetail(
+                  farmId: state.pathParameters['id']!,
+                  farm: state.extra as FarmModel?,
+                ),
+                beginOffset: const Offset(0, 0.08),
               ),
             ),
           ],
         ),
         GoRoute(
           path: '/hub',
-          builder: (context, state) => const HubPage(),
+          pageBuilder: (context, state) => FadeSlidePage<void>(
+            key: state.pageKey,
+            child: const HubPage(),
+          ),
           routes: [
             GoRoute(
               path: 'article/:id',
-              builder: (context, state) => ArticleDetail(
-                articleId: state.pathParameters['id']!,
-                article: state.extra as ArticleModel?,
+              pageBuilder: (context, state) => FadeSlidePage<void>(
+                key: state.pageKey,
+                child: ArticleDetail(
+                  articleId: state.pathParameters['id']!,
+                  article: state.extra as ArticleModel?,
+                ),
+                beginOffset: const Offset(0, 0.08),
               ),
             ),
           ],
         ),
         GoRoute(
           path: '/logistics',
-          builder: (context, state) => const LogisticsPage(),
+          pageBuilder: (context, state) => FadeSlidePage<void>(
+            key: state.pageKey,
+            child: const LogisticsPage(),
+          ),
         ),
         GoRoute(
           path: '/profile',
-          builder: (context, state) => const ProfilePage(),
+          pageBuilder: (context, state) => FadeSlidePage<void>(
+            key: state.pageKey,
+            child: const ProfilePage(),
+          ),
         ),
       ],
     ),

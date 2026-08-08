@@ -7,6 +7,7 @@ import 'package:cakobean/features/farm/presentation/widgets/farm_sheet.dart';
 import 'package:cakobean/shared/widgets/add_button.dart';
 import 'package:cakobean/shared/widgets/empty_state.dart';
 import 'package:cakobean/shared/widgets/page_header.dart';
+import 'package:cakobean/shared/widgets/stagger_in.dart';
 
 class FarmPage extends StatefulWidget {
   const FarmPage({super.key});
@@ -106,7 +107,10 @@ class _FarmPageState extends State<FarmPage> {
                                   ),
                               itemCount: farms.length,
                               itemBuilder: (context, i) {
-                                return FarmCard(farm: farms[i], ext: ext);
+                                return StaggerIn(
+                                  index: i,
+                                  child: FarmCard(farm: farms[i], ext: ext),
+                                );
                               },
                             ),
                           ),

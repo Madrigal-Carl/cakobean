@@ -124,6 +124,7 @@ class _ArticleDetailState extends State<ArticleDetail> {
                 child: _MediaCarousel(
                   ext: ext,
                   urls: media,
+                  heroTag: 'article-thumb-${_article.id}',
                   pageController: _mediaPageController,
                   currentIndex: _mediaIndex,
                   onPageChanged: (i) => setState(() => _mediaIndex = i),
@@ -260,6 +261,7 @@ class _ArticleDetailState extends State<ArticleDetail> {
 class _MediaCarousel extends StatelessWidget {
   final AppThemeExtension ext;
   final List<String> urls;
+  final String? heroTag;
   final PageController pageController;
   final int currentIndex;
   final ValueChanged<int> onPageChanged;
@@ -268,6 +270,7 @@ class _MediaCarousel extends StatelessWidget {
   const _MediaCarousel({
     required this.ext,
     required this.urls,
+    this.heroTag,
     required this.pageController,
     required this.currentIndex,
     required this.onPageChanged,
@@ -287,16 +290,22 @@ class _MediaCarousel extends StatelessWidget {
               controller: pageController,
               itemCount: urls.length,
               onPageChanged: onPageChanged,
-              itemBuilder: (context, i) => Image.network(
-                urls[i],
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: ext.sand,
-                  alignment: Alignment.center,
-                  child: Icon(fallbackIcon, color: ext.cocoa50, size: 40),
-                ),
-              ),
+              itemBuilder: (context, i) {
+                final image = Image.network(
+                  urls[i],
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: ext.sand,
+                    alignment: Alignment.center,
+                    child: Icon(fallbackIcon, color: ext.cocoa50, size: 40),
+                  ),
+                );
+                // Hero only on the first slide so the tag stays unique —
+                // a PageView can build sibling pages while swiping.
+                if (heroTag == null || i != 0) return image;
+                return Hero(tag: heroTag!, child: image);
+              },
             ),
           ),
         ),

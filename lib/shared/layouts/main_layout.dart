@@ -89,10 +89,25 @@ class MainLayout extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        selected ? item.activeIcon : item.icon,
-                        color: selected ? AppColors.ember : ext.cocoa50,
-                        size: 22,
+                      AnimatedSwitcher(
+                        duration: AppMotion.fast,
+                        switchInCurve: Curves.easeOutBack,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) {
+                          return ScaleTransition(
+                            scale: animation,
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Icon(
+                          selected ? item.activeIcon : item.icon,
+                          key: ValueKey(selected),
+                          color: selected ? AppColors.ember : ext.cocoa50,
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
