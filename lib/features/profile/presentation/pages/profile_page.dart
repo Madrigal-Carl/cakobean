@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
+import 'package:cakobean/features/auth/viewmodels/auth_viewmodel.dart';
 import '../../data/models/profile.dart';
 import '../widgets/profile_row.dart';
 import '../widgets/profile_section.dart';
 import '../widgets/theme_mode_toggle.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   void _showComingSoon(BuildContext context, String feature) {
@@ -16,10 +17,25 @@ class ProfilePage extends StatelessWidget {
     ).showSnackBar(SnackBar(content: Text('$feature — coming soon')));
   }
 
+  String _initialsFor(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    final letters = parts.where((p) => p.isNotEmpty).map((p) => p[0]).take(2);
+    return letters.join().toUpperCase();
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ext = Theme.of(context).extension<AppThemeExtension>()!;
+    final user = ref.watch(authStateProvider).value;
     final profile = mockProfile;
+
+    final name = user?.displayName ?? '';
+    final email = user?.email;
+    final displayName =
+        name.trim().isEmpty ? profile.fullName : name.trim();
+    final username = (email == null || email.isEmpty)
+        ? profile.username
+        : email.split('@').first;
 
     return Scaffold(
       backgroundColor: ext.cream,
@@ -41,7 +57,7 @@ class ProfilePage extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    profile.initials,
+                    _initialsFor(displayName),
                     style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
@@ -52,7 +68,7 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.x4),
               Text(
-                profile.fullName,
+                displayName,
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,
@@ -60,7 +76,7 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '@${profile.username}',
+                '@$username',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: ext.cocoa50),
               ),
@@ -111,7 +127,7 @@ class ProfilePage extends StatelessWidget {
                     ext: ext,
                     icon: Icons.email_outlined,
                     label: 'Email',
-                    value: profile.email,
+                    value: user?.email ?? profile.email,
                   ),
                 ],
               ),
@@ -120,7 +136,8 @@ class ProfilePage extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () =>
+                      ref.read(authControllerProvider.notifier).signOut(),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.x3,

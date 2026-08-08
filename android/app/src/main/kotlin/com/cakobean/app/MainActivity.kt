@@ -1,4 +1,4 @@
-package com.example.cakobean
+package com.cakobean.app
 
 import io.flutter.embedding.android.FlutterActivity
 
