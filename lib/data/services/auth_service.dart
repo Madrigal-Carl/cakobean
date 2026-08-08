@@ -8,9 +8,11 @@ class AuthService {
 
   final FirebaseAuth _auth;
 
-  /// Emits the current user whenever the auth state changes (sign-in,
-  /// sign-out, token refresh).
-  Stream<User?> get userStream => _auth.authStateChanges();
+  /// Emits the current user whenever it changes — sign-in, sign-out, AND
+  /// profile updates (display name/photo). `authStateChanges` only fires on
+  /// sign-in state changes, so it can carry a stale display name right after
+  /// registration; this stream keeps the UI in sync with the latest profile.
+  Stream<User?> get userStream => _auth.idTokenChanges();
 
   /// The user at this exact moment — useful for synchronous checks (routing).
   User? get currentUser => _auth.currentUser;

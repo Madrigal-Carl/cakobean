@@ -1,16 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
+import 'package:cakobean/ui/features/auth/view_models/auth_viewmodel.dart';
+import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
 
 /// Gradient hero header with a wave-shaped bottom edge.
 /// Used only on [HomePage].
-class HomeHeader extends StatelessWidget {
+class HomeHeader extends ConsumerWidget {
   final AppThemeExtension ext;
   const HomeHeader({super.key, required this.ext});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final authUser = ref.watch(authStateProvider).value;
+    final hubProfile = authUser == null
+        ? null
+        : ref.watch(hubUserProvider(authUser.uid)).value;
+
+    // Registered profile first (Firestore `users` doc), then the auth display
+    // name, then a neutral fallback.
+    final firstName = (hubProfile?.firstName ?? '').trim();
+    final displayParts = (authUser?.displayName ?? '')
+        .trim()
+        .split(RegExp(r'\s+'));
+    final greetingName = firstName.isNotEmpty
+        ? firstName
+        : (displayParts.isNotEmpty ? displayParts.first : 'Farmer');
 
     return ClipPath(
       clipper: _WaveClipper(),
@@ -35,7 +52,7 @@ class HomeHeader extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.x1),
             Text(
-              'Demo Farmer',
+              greetingName,
               style: textTheme.headlineLarge?.copyWith(
                 color: Colors.white,
                 fontSize: 30,

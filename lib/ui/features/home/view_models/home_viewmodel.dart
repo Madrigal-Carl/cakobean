@@ -10,11 +10,7 @@ const int newestArticleCount = 3;
 
 /// Provides the single [HomeRepository] instance app-wide.
 final homeRepositoryProvider = Provider<HomeRepository>(
-  (ref) {
-    final repo = HomeRepository();
-    ref.onDispose(repo.dispose);
-    return repo;
-  },
+  (ref) => HomeRepository(),
 );
 
 /// Live "Newest Article" — the [newestArticleCount] most recent articles,
@@ -25,11 +21,37 @@ final newestArticlesProvider = StreamProvider<List<ArticleModel>>(
       .watchNewestArticles(newestArticleCount),
 );
 
-/// Live recently-viewed article history, newest first (from on-device
-/// storage, since that's where the user's viewing history lives).
-final recentViewsProvider = StreamProvider<List<RecentView>>(
-  (ref) => ref.watch(homeRepositoryProvider).watchRecentViews(),
-);
+/// Reactive recently-viewed article history, newest first. Backed by
+/// on-device storage (that's where the user's viewing history lives) and
+/// surfaced through [HomeRepository] — this notifier is the single owner of
+/// the in-app state.
+class RecentViewsNotifier extends AsyncNotifier<List<RecentView>> {
+  @override
+  Future<List<RecentView>> build() {
+    return ref.read(homeRepositoryProvider).loadRecentViews();
+  }
+
+  /// Records that the user opened [articleId], moving it to the front of the
+  /// list. Called from the article detail page.
+  Future<void> record(String articleId) async {
+    final views = await ref
+        .read(homeRepositoryProvider)
+        .recordArticleView(articleId);
+    state = AsyncValue.data(views);
+  }
+
+  /// Clears the history — used when the user signs out so the next account
+  /// doesn't inherit the previous one's "recently viewed" list.
+  Future<void> clear() async {
+    await ref.read(homeRepositoryProvider).clearRecentViews();
+    state = const AsyncValue.data([]);
+  }
+}
+
+final recentViewsProvider =
+    AsyncNotifierProvider<RecentViewsNotifier, List<RecentView>>(
+      RecentViewsNotifier.new,
+    );
 
 /// A recently-viewed article paired with its (optional) live article data.
 /// `article` is null only while that article's stream is loading.

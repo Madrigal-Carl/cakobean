@@ -4,6 +4,7 @@ import 'package:cakobean/data/repositories/auth_repository.dart';
 import 'package:cakobean/data/seed/hub_seed.dart';
 import 'package:cakobean/data/services/hub_service.dart';
 import 'package:cakobean/domain/models/article.dart';
+import 'package:cakobean/domain/models/auth.dart';
 import 'package:cakobean/domain/models/comment.dart';
 import 'package:cakobean/domain/models/hub_user.dart';
 
@@ -135,6 +136,23 @@ class HubRepository {
     return _service.watchUser(userId).map(_userFromFirestore);
   }
 
+  /// Writes (or updates) a user's public profile in the `users` collection so
+  /// their name/email/avatar can be resolved when they author content.
+  Future<void> saveUser(HubUser user) {
+    return _service.upsertUser(user.uid, _userToMap(user));
+  }
+
+  /// Upserts the currently signed-in user into the `users` collection. Called
+  /// after registration and sign-in so a real (non-demo) user's profile is
+  /// available to resolve their authored content. [firstName]/[lastName] come
+  /// from the registration form; otherwise they're derived from the auth
+  /// display name (e.g. on later sign-ins).
+  Future<void> saveCurrentUser({String? firstName, String? lastName}) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await saveUser(_userFor(user, firstName: firstName, lastName: lastName));
+  }
+
   /// Identity of the person acting on the Hub. Falls back to a guest id when
   /// not signed in so the Hub stays usable, but the app forces login anyway.
   String get currentUserId => _auth.currentUser?.uid ?? _guestUserId;
@@ -142,15 +160,41 @@ class HubRepository {
   // ── Mapping ────────────────────────────────────────────────────────────
 
   static const _guestUserId = 'guest';
-  static const _guestAvatarUrl = 'https://i.pravatar.cc/100?img=68';
+
+  /// Fallback avatar used when a user has no photo.
+  static const defaultAvatarUrl = 'https://i.pravatar.cc/100?img=68';
+  static const _guestAvatarUrl = defaultAvatarUrl;
 
   /// Bump this whenever the seed data or its Firestore schema changes so the
   /// database re-seeds once (old rows are overwritten idempotently).
-  static const int _seedVersion = 4;
+  static const int _seedVersion = 5;
 
   static String _authorNameFor(String? displayName) {
     final name = displayName?.trim() ?? '';
     return name.isEmpty ? 'Guest' : name;
+  }
+
+  /// Builds a [HubUser] from the signed-in auth user. Prefers explicit
+  /// [firstName]/[lastName] (registration form); falls back to splitting the
+  /// auth display name for users who registered before profiles existed.
+  static HubUser _userFor(
+    AuthUser user, {
+    String? firstName,
+    String? lastName,
+  }) {
+    final parts = (user.displayName ?? '').trim().split(RegExp(r'\s+'));
+    final first = (firstName ?? '').trim();
+    final last = (lastName ?? '').trim();
+    return HubUser(
+      uid: user.uid,
+      firstName: first.isNotEmpty
+          ? first
+          : (parts.isNotEmpty ? parts.first : ''),
+      lastName: last.isNotEmpty ? last : (parts.length > 1 ? parts.last : ''),
+      email: user.email,
+      avatarUrl: user.photoUrl ?? defaultAvatarUrl,
+      createdAt: DateTime.now(),
+    );
   }
 
   static ArticleModel _articleFromFirestore(
@@ -222,6 +266,7 @@ class HubRepository {
       'lastName': user.lastName,
       'email': user.email,
       'avatarUrl': user.avatarUrl,
+      'role': user.role,
       'createdAt': user.createdAt != null
           ? Timestamp.fromDate(user.createdAt!)
           : FieldValue.serverTimestamp(),
@@ -239,6 +284,7 @@ class HubRepository {
       lastName: data['lastName'] as String? ?? '',
       email: data['email'] as String? ?? '',
       avatarUrl: data['avatarUrl'] as String? ?? _guestAvatarUrl,
+      role: data['role'] as String? ?? hubDefaultRole,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
   }

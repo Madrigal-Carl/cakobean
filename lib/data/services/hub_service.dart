@@ -56,6 +56,14 @@ class HubService {
     return _users.doc(userId).snapshots();
   }
 
+  /// Upserts a user's public profile into the `users` collection. Merge keeps
+  /// existing fields (like `createdAt`) intact on repeated sign-ins.
+  Future<void> upsertUser(String userId, Map<String, dynamic> data) {
+    return _users
+        .doc(userId)
+        .set(data, SetOptions(merge: true));
+  }
+
   /// Live comments for an article. Filtered by `articleId` (single-field
   /// query — no composite index needed); the caller sorts newest first.
   Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> watchComments(

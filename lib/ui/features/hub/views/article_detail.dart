@@ -36,7 +36,7 @@ class _ArticleDetailState extends ConsumerState<ArticleDetail> {
   void initState() {
     super.initState();
     // Record this as "recently viewed" on the home screen.
-    ref.read(homeRepositoryProvider).recordArticleView(widget.articleId);
+    ref.read(recentViewsProvider.notifier).record(widget.articleId);
   }
 
   @override

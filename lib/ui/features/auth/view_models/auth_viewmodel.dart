@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cakobean/data/repositories/auth_repository.dart';
 import 'package:cakobean/domain/models/auth.dart';
+import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
 
 /// Provides the single [AuthRepository] instance app-wide.
 final authRepositoryProvider = Provider<AuthRepository>(
@@ -42,6 +43,7 @@ class AuthController extends Notifier<AuthState> {
       await ref
           .read(authRepositoryProvider)
           .signInWithEmail(email: email, password: password);
+      await _syncProfile();
       state = const AuthState();
       return true;
     } on AuthException catch (e) {
@@ -54,6 +56,8 @@ class AuthController extends Notifier<AuthState> {
     required String email,
     required String password,
     String? displayName,
+    String? firstName,
+    String? lastName,
   }) async {
     state = const AuthState(isLoading: true);
     try {
@@ -64,6 +68,7 @@ class AuthController extends Notifier<AuthState> {
             password: password,
             displayName: displayName,
           );
+      await _syncProfile(firstName: firstName, lastName: lastName);
       state = const AuthState();
       return true;
     } on AuthException catch (e) {
@@ -75,6 +80,23 @@ class AuthController extends Notifier<AuthState> {
   Future<void> signOut() async {
     await ref.read(authRepositoryProvider).signOut();
     state = const AuthState();
+  }
+
+  /// Writes the signed-in user's public profile to the Firestore `users`
+  /// collection so the app resolves their real identity instead of demo
+  /// data. Runs inside the auth flow because the router bounces to /home as
+  /// soon as auth state changes — a page's `context` may already be disposed
+  /// by then, but this app-scoped `ref` always outlives navigation. Failures
+  /// are non-fatal: auth is the source of truth for logging in.
+  Future<void> _syncProfile({String? firstName, String? lastName}) async {
+    try {
+      await ref
+          .read(hubRepositoryProvider)
+          .saveCurrentUser(firstName: firstName, lastName: lastName);
+    } on Exception catch (e) {
+      // ignore: avoid_print
+      print('Profile sync failed (verify Firestore rules): $e');
+    }
   }
 
   /// Clears a stale error (e.g. after the user edits a field).

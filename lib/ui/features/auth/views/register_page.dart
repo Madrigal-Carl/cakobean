@@ -51,6 +51,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           email: _emailController.text,
           password: _passwordController.text,
           displayName: displayName.isEmpty ? null : displayName,
+          firstName: firstName,
+          lastName: lastName,
         );
     if (ok && mounted) context.go('/home');
   }

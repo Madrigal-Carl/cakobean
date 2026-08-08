@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
-import 'package:cakobean/data/mock/mock_profile.dart';
 import 'package:cakobean/ui/features/auth/view_models/auth_viewmodel.dart';
+import 'package:cakobean/ui/features/home/view_models/home_viewmodel.dart';
+import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
 import 'package:cakobean/ui/features/profile/widgets/profile_row.dart';
 import 'package:cakobean/ui/features/profile/widgets/profile_section.dart';
 import 'package:cakobean/ui/features/profile/widgets/theme_mode_toggle.dart';
@@ -27,13 +28,23 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ext = Theme.of(context).extension<AppThemeExtension>()!;
     final user = ref.watch(authStateProvider).value;
-    final profile = mockProfile;
+    final hubProfile = user == null
+        ? null
+        : ref.watch(hubUserProvider(user.uid)).value;
 
-    final name = user?.displayName ?? '';
+    // Registered profile first (Firestore `users` doc), then the auth
+    // display name, then a neutral fallback — never the demo farmer.
+    final nameParts = (user?.displayName ?? '').trim().split(RegExp(r'\s+'));
+    final firstName = hubProfile?.firstName.isNotEmpty == true
+        ? hubProfile!.firstName
+        : (nameParts.isNotEmpty ? nameParts.first : '');
+    final lastName = hubProfile?.lastName.isNotEmpty == true
+        ? hubProfile!.lastName
+        : (nameParts.length > 1 ? nameParts.last : '');
+    final displayName = '$firstName $lastName'.trim();
     final email = user?.email;
-    final displayName = name.trim().isEmpty ? profile.fullName : name.trim();
     final username = (email == null || email.isEmpty)
-        ? profile.username
+        ? (firstName.isNotEmpty ? firstName.toLowerCase() : 'farmer')
         : email.split('@').first;
 
     return Scaffold(
@@ -93,19 +104,19 @@ class ProfilePage extends ConsumerWidget {
                     ext: ext,
                     icon: Icons.person_outline_rounded,
                     label: 'First Name',
-                    value: profile.firstName,
+                    value: firstName.isEmpty ? 'Not set' : firstName,
                   ),
                   ProfileRow(
                     ext: ext,
                     icon: Icons.person_outline_rounded,
                     label: 'Middle Name',
-                    value: profile.middleName,
+                    value: 'Not set',
                   ),
                   ProfileRow(
                     ext: ext,
                     icon: Icons.person_outline_rounded,
                     label: 'Last Name',
-                    value: profile.lastName,
+                    value: lastName.isEmpty ? 'Not set' : lastName,
                   ),
                 ],
               ),
@@ -120,13 +131,13 @@ class ProfilePage extends ConsumerWidget {
                     ext: ext,
                     icon: Icons.alternate_email_rounded,
                     label: 'Username',
-                    value: profile.username,
+                    value: '@$username',
                   ),
                   ProfileRow(
                     ext: ext,
                     icon: Icons.email_outlined,
                     label: 'Email',
-                    value: user?.email ?? profile.email,
+                    value: user?.email ?? 'Not set',
                   ),
                 ],
               ),
@@ -135,8 +146,15 @@ class ProfilePage extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () =>
-                      ref.read(authControllerProvider.notifier).signOut(),
+                  onPressed: () async {
+                    await ref
+                        .read(authControllerProvider.notifier)
+                        .signOut();
+                    // Don't leak the previous account's viewing history.
+                    await ref
+                        .read(recentViewsProvider.notifier)
+                        .clear();
+                  },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.x3,
