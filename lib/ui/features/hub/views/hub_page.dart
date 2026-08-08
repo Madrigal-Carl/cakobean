@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
-import 'package:cakobean/data/mock/mock_hub_articles.dart';
 import 'package:cakobean/domain/models/article.dart';
 import 'package:cakobean/ui/core/widgets/empty_state.dart';
 import 'package:cakobean/ui/core/widgets/page_header.dart';
 import 'package:cakobean/ui/core/widgets/stagger_in.dart';
+import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
 import 'package:cakobean/ui/features/hub/widgets/article_card.dart';
 import 'package:cakobean/ui/features/hub/widgets/tag_filter_chip.dart';
 
-class HubPage extends StatefulWidget {
+class HubPage extends ConsumerStatefulWidget {
   const HubPage({super.key});
 
   @override
-  State<HubPage> createState() => _HubPageState();
+  ConsumerState<HubPage> createState() => _HubPageState();
 }
 
-class _HubPageState extends State<HubPage> {
+class _HubPageState extends ConsumerState<HubPage> {
   final _searchController = TextEditingController();
   String _query = '';
   ArticleTag? _selectedTag;
@@ -27,9 +28,7 @@ class _HubPageState extends State<HubPage> {
     super.dispose();
   }
 
-  List<ArticleModel> get _filteredArticles {
-    var articles = mockHubArticles;
-
+  List<ArticleModel> _filter(List<ArticleModel> articles) {
     if (_selectedTag != null) {
       articles = articles.where((a) => a.tags.contains(_selectedTag)).toList();
     }
@@ -49,10 +48,30 @@ class _HubPageState extends State<HubPage> {
     return articles;
   }
 
+  void _clearFilters() {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+      _selectedTag = null;
+    });
+  }
+
+  void _retry() {
+    ref.invalidate(hubSeedProvider);
+    ref.invalidate(hubArticlesProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppThemeExtension>()!;
-    final articles = _filteredArticles;
+    final articlesAsync = ref.watch(hubArticlesProvider);
+    final seedingAsync = ref.watch(hubSeedProvider);
+
+    final articles = articlesAsync.value ?? const <ArticleModel>[];
+    final filtered = _filter(articles);
+    final isInitialLoading = articlesAsync.isLoading && filtered.isEmpty;
+    final seedFailed =
+        seedingAsync.hasError && !articlesAsync.hasError && filtered.isEmpty;
 
     return Scaffold(
       backgroundColor: ext.cream,
@@ -104,37 +123,63 @@ class _HubPageState extends State<HubPage> {
               ),
             ),
             Expanded(
-              child: articles.isEmpty
-                  ? EmptyState(
-                      ext: ext,
-                      icon: Icons.search_off_rounded,
-                      message: _query.trim().isEmpty
-                          ? 'No articles tagged ${_selectedTag?.label}'
-                          : 'No articles match "$_query"',
-                      actionLabel: 'Clear filters',
-                      onAction: () {
-                        _searchController.clear();
-                        setState(() {
-                          _query = '';
-                          _selectedTag = null;
-                        });
-                      },
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.x5,
-                        vertical: AppSpacing.x3,
-                      ),
-                      itemCount: articles.length,
-                      separatorBuilder: (context, i) =>
-                          Divider(color: ext.hairline, height: 1),
-                      itemBuilder: (context, i) {
-                        return StaggerIn(
-                          index: i,
-                          child: ArticleCard(article: articles[i], ext: ext),
-                        );
-                      },
+              child: switch ((
+                isInitialLoading,
+                articlesAsync.hasError,
+                seedFailed,
+                filtered.isEmpty,
+              )) {
+                (true, _, _, _) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                (_, true, _, _) => EmptyState(
+                    ext: ext,
+                    icon: Icons.cloud_off_rounded,
+                    message:
+                        'Could not reach the Hub.\nCheck your connection and try again.',
+                    actionLabel: 'Retry',
+                    onAction: _retry,
+                  ),
+                (_, _, true, _) => EmptyState(
+                    ext: ext,
+                    icon: Icons.error_outline_rounded,
+                    message:
+                        'Could not seed the demo data.\nMake sure your '
+                        'Firestore security rules allow reads and writes, '
+                        'then retry.',
+                    actionLabel: 'Retry',
+                    onAction: _retry,
+                  ),
+                (_, _, _, true) => EmptyState(
+                    ext: ext,
+                    icon: Icons.search_off_rounded,
+                    message: _query.trim().isEmpty
+                        ? _selectedTag == null
+                            ? 'No articles yet — pull down to refresh.'
+                            : 'No articles tagged ${_selectedTag?.label}'
+                        : 'No articles match "$_query"',
+                    actionLabel: 'Clear filters',
+                    onAction: _clearFilters,
+                  ),
+                _ => ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.x5,
+                      vertical: AppSpacing.x3,
                     ),
+                    itemCount: filtered.length,
+                    separatorBuilder: (context, i) =>
+                        Divider(color: ext.hairline, height: 1),
+                    itemBuilder: (context, i) {
+                      return StaggerIn(
+                        index: i,
+                        child: ArticleCard(
+                          article: filtered[i],
+                          ext: ext,
+                        ),
+                      );
+                    },
+                  ),
+              },
             ),
           ],
         ),

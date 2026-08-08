@@ -1,20 +1,32 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/article.dart';
+import 'package:cakobean/domain/models/comment.dart';
 import 'package:cakobean/ui/core/widgets/pressable_scale.dart';
 import 'package:cakobean/ui/core/widgets/stat_chip.dart';
+import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
 
-class ArticleCard extends StatelessWidget {
+class ArticleCard extends ConsumerWidget {
   final ArticleModel article;
   final AppThemeExtension ext;
 
   const ArticleCard({super.key, required this.article, required this.ext});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final reactionCount =
+        ref.watch(hubLikeCountProvider(article.id)).value ?? 0;
+    final commentCount =
+        ref.watch(hubCommentCountProvider(article.id)).value ?? 0;
+    final authorId = article.authorId;
+    final author = authorId == null
+        ? null
+        : ref.watch(hubUserProvider(authorId)).value;
 
     return PressableScale(
       child: InkWell(
@@ -29,12 +41,17 @@ class ArticleCard extends StatelessWidget {
                 tag: 'article-thumb-${article.id}',
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  child: Image.network(
-                    article.imageUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: article.imageUrl,
                     width: 84,
                     height: 84,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
+                    placeholder: (context, url) => Container(
+                      width: 84,
+                      height: 84,
+                      color: ext.sand,
+                    ),
+                    errorWidget: (context, url, error) => Container(
                       width: 84,
                       height: 84,
                       color: ext.sand,
@@ -75,10 +92,18 @@ class ArticleCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.x2),
+                    if (author != null) ...[
+                      _ArticleMeta(
+                        ext: ext,
+                        fullName: author.fullName,
+                        createdAt: article.createdAt,
+                      ),
+                      const SizedBox(height: AppSpacing.x2),
+                    ],
                     _ArticleStats(
                       ext: ext,
-                      reactionCount: article.reactionCount,
-                      commentCount: article.commentCount,
+                      reactionCount: reactionCount,
+                      commentCount: commentCount,
                     ),
                     const SizedBox(height: AppSpacing.x2),
                     _TagRow(ext: ext, tags: article.tags),
@@ -89,6 +114,44 @@ class ArticleCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Author + relative time, matching the detail page's meta row style.
+class _ArticleMeta extends StatelessWidget {
+  final AppThemeExtension ext;
+  final String fullName;
+  final DateTime? createdAt;
+
+  const _ArticleMeta({
+    required this.ext,
+    required this.fullName,
+    this.createdAt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          fullName,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: ext.cocoa50,
+          ),
+        ),
+        if (createdAt != null) ...[
+          const SizedBox(width: AppSpacing.x1),
+          Text('·', style: TextStyle(color: ext.cocoa50)),
+          const SizedBox(width: AppSpacing.x1),
+          Text(
+            timeAgo(createdAt!),
+            style: TextStyle(fontSize: 12.5, color: ext.cocoa50),
+          ),
+        ],
+      ],
     );
   }
 }

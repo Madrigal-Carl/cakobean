@@ -1,8 +1,51 @@
 import 'package:cakobean/domain/models/article.dart';
 import 'package:cakobean/domain/models/comment.dart';
+import 'package:cakobean/domain/models/hub_user.dart';
 
-/// Temporary mock data until this is wired to a real data source.
-final mockHubArticles = [
+/// Demo users written to the `users` collection on first launch.
+const seedHubUsers = [
+  HubUser(
+    uid: 'demo',
+    firstName: 'Demo',
+    lastName: 'Farmer',
+    email: 'demo@cakobean.app',
+    avatarUrl: 'https://i.pravatar.cc/100?img=68',
+  ),
+  HubUser(
+    uid: 'u-rosario',
+    firstName: 'Rosario',
+    lastName: 'Domingo',
+    email: 'rosario@cakobean.app',
+    avatarUrl: 'https://i.pravatar.cc/100?img=5',
+  ),
+  HubUser(
+    uid: 'u-ben',
+    firstName: 'Ben',
+    lastName: 'Tugon',
+    email: 'ben@cakobean.app',
+    avatarUrl: 'https://i.pravatar.cc/100?img=12',
+  ),
+  HubUser(
+    uid: 'u-marites',
+    firstName: 'Marites',
+    lastName: 'Aquino',
+    email: 'marites@cakobean.app',
+    avatarUrl: 'https://i.pravatar.cc/100?img=32',
+  ),
+  HubUser(
+    uid: 'u-junjun',
+    firstName: 'Junjun',
+    lastName: 'Panganiban',
+    email: 'junjun@cakobean.app',
+    avatarUrl: 'https://i.pravatar.cc/100?img=18',
+  ),
+];
+
+/// Demo articles written to the `articles` collection on first launch, each
+/// referencing its author by `authorId`. Their comments are written to the
+/// top-level `comments` collection (see [seedHubLikes] for likes). `mediaUrls`
+/// may mix images and videos — videos are detected by their file extension.
+final seedHubArticles = [
   ArticleModel(
     id: '1',
     title: 'Shade Tree Management for Sustainable Cacao Farming',
@@ -25,11 +68,12 @@ final mockHubArticles = [
       ArticleTag.weather,
       ArticleTag.guides,
     ],
-    reactionCount: 128,
-    commentCount: 3,
+    authorId: 'u-rosario',
+    createdAt: DateTime(2026, 8, 1, 9, 0),
     comments: [
       CommentModel(
         id: 'c1',
+        authorId: 'u-rosario',
         authorName: 'Rosario D.',
         avatarUrl: 'https://i.pravatar.cc/100?img=5',
         text:
@@ -38,6 +82,7 @@ final mockHubArticles = [
       ),
       CommentModel(
         id: 'c2',
+        authorId: 'u-ben',
         authorName: 'Ben T.',
         avatarUrl: 'https://i.pravatar.cc/100?img=12',
         text:
@@ -46,6 +91,7 @@ final mockHubArticles = [
       ),
       CommentModel(
         id: 'c3',
+        authorId: 'u-marites',
         authorName: 'Marites A.',
         avatarUrl: 'https://i.pravatar.cc/100?img=32',
         text: 'Great breakdown, sharing this with our cooperative.',
@@ -67,11 +113,12 @@ final mockHubArticles = [
       'https://picsum.photos/seed/cacao2b/800/600',
     ],
     tags: [ArticleTag.pests, ArticleTag.diseases, ArticleTag.guides],
-    reactionCount: 342,
-    commentCount: 1,
+    authorId: 'u-junjun',
+    createdAt: DateTime(2026, 7, 30, 8, 0),
     comments: [
       CommentModel(
         id: 'c4',
+        authorId: 'u-junjun',
         authorName: 'Junjun P.',
         avatarUrl: 'https://i.pravatar.cc/100?img=18',
         text: 'The pheromone trap tip alone saved half my crop this season.',
@@ -84,12 +131,16 @@ final mockHubArticles = [
     title: 'Post-Harvest Fermentation Techniques',
     description:
         'A step-by-step look at fermentation timing and turning frequency '
-        'to develop the flavor precursors buyers pay a premium for.',
+        'to develop the flavor precursors buyers pay a premium for. '
+        'Watch the video to see the correct heap structure in action.',
     imageUrl: 'https://picsum.photos/seed/cacao3/200/200',
-    mediaUrls: ['https://picsum.photos/seed/cacao3/800/600'],
+    mediaUrls: [
+      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+      'https://picsum.photos/seed/cacao3/800/600',
+    ],
     tags: [ArticleTag.harvest, ArticleTag.guides, ArticleTag.nutrition],
-    reactionCount: 89,
-    commentCount: 0,
+    authorId: 'u-marites',
+    createdAt: DateTime(2026, 7, 29, 8, 0),
   ),
   ArticleModel(
     id: '4',
@@ -100,8 +151,8 @@ final mockHubArticles = [
     imageUrl: 'https://picsum.photos/seed/cacao4/200/200',
     mediaUrls: ['https://picsum.photos/seed/cacao4/800/600'],
     tags: [ArticleTag.cultivation, ArticleTag.regenerative, ArticleTag.guides],
-    reactionCount: 51,
-    commentCount: 0,
+    authorId: 'u-ben',
+    createdAt: DateTime(2026, 7, 28, 8, 0),
   ),
   ArticleModel(
     id: '5',
@@ -120,20 +171,25 @@ final mockHubArticles = [
       ArticleTag.pests,
       ArticleTag.guides,
     ],
-    reactionCount: 1204,
-    commentCount: 0,
+    authorId: 'u-rosario',
+    createdAt: DateTime(2026, 7, 27, 8, 0),
   ),
   ArticleModel(
     id: '6',
     title: 'Reading Wet-Season Forecasts for Spray Scheduling',
     description:
         'Why timing fungicide applications around rainfall windows matters '
-        'more than the calendar, and how to plan around it.',
+        'more than the calendar, and how to plan around it. '
+        'Includes a short walkthrough of reading the Doppler map.',
     imageUrl: 'https://picsum.photos/seed/cacao6/200/200',
-    mediaUrls: ['https://picsum.photos/seed/cacao6/800/600'],
+    mediaUrls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      'https://picsum.photos/seed/cacao6/800/600',
+      'https://picsum.photos/seed/cacao6b/800/600',
+    ],
     tags: [ArticleTag.weather, ArticleTag.diseases],
-    reactionCount: 76,
-    commentCount: 0,
+    authorId: 'u-marites',
+    createdAt: DateTime(2026, 7, 26, 8, 0),
   ),
   ArticleModel(
     id: '7',
@@ -144,8 +200,8 @@ final mockHubArticles = [
     imageUrl: 'https://picsum.photos/seed/cacao7/200/200',
     mediaUrls: ['https://picsum.photos/seed/cacao7/800/600'],
     tags: [ArticleTag.nutrition, ArticleTag.cultivation],
-    reactionCount: 33,
-    commentCount: 0,
+    authorId: 'u-ben',
+    createdAt: DateTime(2026, 7, 25, 8, 0),
   ),
   ArticleModel(
     id: '8',
@@ -156,7 +212,23 @@ final mockHubArticles = [
     imageUrl: 'https://picsum.photos/seed/cacao8/200/200',
     mediaUrls: ['https://picsum.photos/seed/cacao8/800/600'],
     tags: [ArticleTag.guides, ArticleTag.cultivation],
-    reactionCount: 210,
-    commentCount: 0,
+    authorId: 'demo',
+    createdAt: DateTime(2026, 7, 24, 8, 0),
   ),
 ];
+
+/// Demo likes, mapping article id → user ids that liked it. Seeded as docs in
+/// the top-level `likes` collection (id `{articleId}_{userId}`) with
+/// `articleId` + `userId` fields. Like counts are derived from that collection
+/// at read time, so the "counts" shown by the app are simply `likes` filtered
+/// by `articleId`.
+final seedHubLikes = <String, List<String>>{
+  '1': ['demo', 'u-ben', 'u-marites', 'u-junjun'],
+  '2': ['demo', 'u-rosario', 'u-ben', 'u-marites', 'u-junjun'],
+  '3': ['demo', 'u-rosario'],
+  '4': ['demo', 'u-marites'],
+  '5': ['demo', 'u-rosario', 'u-ben', 'u-marites', 'u-junjun'],
+  '6': ['demo', 'u-ben'],
+  '7': ['u-rosario'],
+  '8': ['demo', 'u-ben', 'u-junjun'],
+};

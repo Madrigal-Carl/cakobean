@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cakobean/app/router/app_router.dart';
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/app/theme/theme_mode_provider.dart';
+import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +17,9 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Seed the Hub database once at startup (no-op when already seeded).
+    ref.watch(hubSeedProvider);
+
     final themeMode = ref.watch(themeModeProvider);
     final router = ref.watch(routerProvider);
 

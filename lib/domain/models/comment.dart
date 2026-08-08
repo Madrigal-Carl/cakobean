@@ -7,6 +7,7 @@ class CommentModel {
   final String avatarUrl;
   final String text;
   final DateTime postedAt;
+  final String? authorId;
 
   const CommentModel({
     required this.id,
@@ -14,6 +15,7 @@ class CommentModel {
     required this.avatarUrl,
     required this.text,
     required this.postedAt,
+    this.authorId,
   });
 }
 

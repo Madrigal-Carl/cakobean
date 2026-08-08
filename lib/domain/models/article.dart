@@ -44,9 +44,9 @@ class ArticleModel {
   final String imageUrl; // thumbnail, used on the hub list card
   final List<String> mediaUrls; // full gallery shown on the detail page
   final List<ArticleTag> tags;
-  final int reactionCount;
-  final int commentCount;
   final List<CommentModel> comments;
+  final String? authorId;
+  final DateTime? createdAt;
 
   const ArticleModel({
     required this.id,
@@ -55,9 +55,9 @@ class ArticleModel {
     required this.imageUrl,
     this.mediaUrls = const [],
     required this.tags,
-    this.reactionCount = 0,
-    this.commentCount = 0,
     this.comments = const [],
+    this.authorId,
+    this.createdAt,
   });
 
   /// Falls back to [imageUrl] if no gallery was provided.
