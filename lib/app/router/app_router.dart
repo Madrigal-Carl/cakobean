@@ -4,21 +4,21 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:cakobean/features/auth/data/models/auth.dart';
-import 'package:cakobean/features/auth/presentation/pages/login_page.dart';
-import 'package:cakobean/features/auth/presentation/pages/register_page.dart';
-import 'package:cakobean/features/auth/viewmodels/auth_viewmodel.dart';
-import 'package:cakobean/features/home/presentation/pages/home_page.dart';
-import 'package:cakobean/features/farm/presentation/pages/farm_page.dart';
-import 'package:cakobean/features/farm/data/models/farm.dart';
-import 'package:cakobean/features/farm/presentation/pages/farm_detail.dart';
-import 'package:cakobean/features/hub/presentation/pages/hub_page.dart';
-import 'package:cakobean/features/hub/data/models/article.dart';
-import 'package:cakobean/features/hub/presentation/pages/article_detail.dart';
-import 'package:cakobean/features/logistics/presentation/pages/logistics_page.dart';
-import 'package:cakobean/features/profile/presentation/pages/profile_page.dart';
-import 'package:cakobean/shared/layouts/main_layout.dart';
-import 'package:cakobean/shared/navigation/page_transitions.dart';
+import 'package:cakobean/domain/models/article.dart';
+import 'package:cakobean/domain/models/auth.dart';
+import 'package:cakobean/domain/models/farm.dart';
+import 'package:cakobean/ui/core/layouts/main_layout.dart';
+import 'package:cakobean/ui/core/navigation/page_transitions.dart';
+import 'package:cakobean/ui/features/auth/view_models/auth_viewmodel.dart';
+import 'package:cakobean/ui/features/auth/views/login_page.dart';
+import 'package:cakobean/ui/features/auth/views/register_page.dart';
+import 'package:cakobean/ui/features/farm/views/farm_detail.dart';
+import 'package:cakobean/ui/features/farm/views/farm_page.dart';
+import 'package:cakobean/ui/features/home/views/home_page.dart';
+import 'package:cakobean/ui/features/hub/views/article_detail.dart';
+import 'package:cakobean/ui/features/hub/views/hub_page.dart';
+import 'package:cakobean/ui/features/logistics/views/logistics_page.dart';
+import 'package:cakobean/ui/features/profile/views/profile_page.dart';
 
 /// Listens to auth state changes and pokes the router so its `redirect`
 /// re-evaluates immediately (sign-in bounces to /home, sign-out to /login).
@@ -49,7 +49,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isLoggedIn = auth.currentUser != null;
       final onAuthPage =
-          state.matchedLocation == '/login' || state.matchedLocation == '/register';
+          state.matchedLocation == '/login' ||
+          state.matchedLocation == '/register';
       if (!isLoggedIn) {
         return onAuthPage ? null : '/login';
       }
@@ -59,10 +60,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/login',
-        pageBuilder: (context, state) => FadeSlidePage<void>(
-          key: state.pageKey,
-          child: const LoginPage(),
-        ),
+        pageBuilder: (context, state) =>
+            FadeSlidePage<void>(key: state.pageKey, child: const LoginPage()),
       ),
       GoRoute(
         path: '/register',
@@ -103,10 +102,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/hub',
-            pageBuilder: (context, state) => FadeSlidePage<void>(
-              key: state.pageKey,
-              child: const HubPage(),
-            ),
+            pageBuilder: (context, state) =>
+                FadeSlidePage<void>(key: state.pageKey, child: const HubPage()),
             routes: [
               GoRoute(
                 path: 'article/:id',
