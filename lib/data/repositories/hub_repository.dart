@@ -26,6 +26,14 @@ class HubRepository {
         .map((docs) => docs.map(_articleFromFirestore).toList());
   }
 
+  /// Live newest [limit] articles, limited at the query level so only those
+  /// documents are fetched (used by the home screen's "Newest" carousel).
+  Stream<List<ArticleModel>> watchNewestArticles(int limit) {
+    return _service
+        .watchArticles(limit: limit)
+        .map((docs) => docs.map(_articleFromFirestore).toList());
+  }
+
   /// Live single article.
   Stream<ArticleModel> watchArticle(String articleId) {
     return _service.watchArticle(articleId).map(_articleFromFirestore);

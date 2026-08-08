@@ -34,12 +34,14 @@ class HubService {
   DocumentReference<Map<String, dynamic>> _seedMeta() =>
       _db.doc('_meta/hub_seed');
 
-  /// Live list of articles, newest first.
-  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> watchArticles() {
-    return _articles
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((query) => query.docs);
+  /// Live list of articles, newest first. Pass [limit] to only fetch the
+  /// latest N documents (used by the home screen's "Newest" carousel).
+  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> watchArticles({
+    int? limit,
+  }) {
+    var query = _articles.orderBy('createdAt', descending: true);
+    if (limit != null && limit > 0) query = query.limit(limit);
+    return query.snapshots().map((query) => query.docs);
   }
 
   /// Live single article document.

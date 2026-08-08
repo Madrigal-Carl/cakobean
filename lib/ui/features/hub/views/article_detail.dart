@@ -10,6 +10,7 @@ import 'package:cakobean/domain/models/comment.dart';
 import 'package:cakobean/domain/models/media.dart';
 import 'package:cakobean/ui/core/widgets/stat_chip.dart';
 import 'package:cakobean/ui/features/auth/view_models/auth_viewmodel.dart';
+import 'package:cakobean/ui/features/home/view_models/home_viewmodel.dart';
 import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
 
 const _guestAvatarUrl = 'https://i.pravatar.cc/100?img=68';
@@ -30,6 +31,13 @@ class _ArticleDetailState extends ConsumerState<ArticleDetail> {
   int _mediaIndex = 0;
   bool _likeBusy = false;
   bool _commentBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Record this as "recently viewed" on the home screen.
+    ref.read(homeRepositoryProvider).recordArticleView(widget.articleId);
+  }
 
   @override
   void dispose() {

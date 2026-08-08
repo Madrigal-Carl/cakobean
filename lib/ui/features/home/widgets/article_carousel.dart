@@ -1,13 +1,17 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
-import 'package:cakobean/data/mock/mock_home_articles.dart';
+import 'package:cakobean/domain/models/article.dart';
 
-/// Auto-scrolling "Newest Article" carousel used only on [HomePage].
+/// Auto-scrolling "Newest Article" carousel on the home screen.
 class ArticleCarousel extends StatefulWidget {
-  const ArticleCarousel({super.key});
+  final List<ArticleModel> articles;
+
+  const ArticleCarousel({super.key, required this.articles});
 
   @override
   State<ArticleCarousel> createState() => _ArticleCarouselState();
@@ -24,12 +28,20 @@ class _ArticleCarouselState extends State<ArticleCarousel> {
     _startAutoScroll();
   }
 
+  @override
+  void didUpdateWidget(covariant ArticleCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.articles.length != oldWidget.articles.length) {
+      _startAutoScroll();
+    }
+  }
+
   void _startAutoScroll() {
     _autoScrollTimer?.cancel();
     _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (!_controller.hasClients) return;
+      if (widget.articles.isEmpty || !_controller.hasClients) return;
 
-      final nextPage = (_page + 1) % mockHomeArticles.length;
+      final nextPage = (_page + 1) % widget.articles.length;
 
       _controller.animateToPage(
         nextPage,
@@ -56,6 +68,9 @@ class _ArticleCarouselState extends State<ArticleCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<AppThemeExtension>()!;
+    final articles = widget.articles;
+
     return Listener(
       onPointerDown: (_) => _pauseAutoScroll(),
       onPointerUp: (_) => _resumeAutoScroll(),
@@ -65,66 +80,69 @@ class _ArticleCarouselState extends State<ArticleCarousel> {
             height: 150,
             child: PageView.builder(
               controller: _controller,
-              itemCount: mockHomeArticles.length,
+              itemCount: articles.length,
               onPageChanged: (i) => setState(() => _page = i),
               itemBuilder: (context, i) {
-                final article = mockHomeArticles[i];
-                return ClipRRect(
+                final article = articles[i];
+                return InkWell(
+                  onTap: () =>
+                      context.push('/hub/article/${article.id}', extra: article),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        article.imageUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Container(
-                            color: article.color,
-                            alignment: Alignment.center,
-                            child: const CircularProgressIndicator(
-                              color: Colors.white70,
-                              strokeWidth: 2,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CachedNetworkImage(
+                          imageUrl: article.imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              Container(color: ext.sand),
+                          errorWidget: (context, url, error) => Container(
+                            color: ext.sand,
+                            child: Icon(
+                              article.tags.isEmpty
+                                  ? Icons.article_outlined
+                                  : article.tags.first.icon,
+                              color: ext.cocoa50,
+                              size: 32,
                             ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(color: article.color);
-                        },
-                      ),
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.65),
-                            ],
-                            stops: const [0.4, 1.0],
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(AppSpacing.x4),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: AppSpacing.x1),
-                            Text(
-                              article.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                height: 1.25,
-                              ),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.65),
+                              ],
+                              stops: const [0.4, 1.0],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
+                        Padding(
+                          padding: const EdgeInsets.all(AppSpacing.x4),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: AppSpacing.x1),
+                              Text(
+                                article.title,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.25,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -133,7 +151,7 @@ class _ArticleCarouselState extends State<ArticleCarousel> {
           const SizedBox(height: AppSpacing.x3),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(mockHomeArticles.length, (i) {
+            children: List.generate(articles.length, (i) {
               final active = i == _page;
               return AnimatedContainer(
                 duration: AppMotion.fast,
