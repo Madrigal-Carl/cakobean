@@ -118,6 +118,55 @@ create trigger on_auth_user_email_confirmed
   after update of email_confirmed_at on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- ── Profile integrity guard ───────────────────────────────────────────────
+-- Stops client apps (stale builds, or a hand-crafted REST call) from wiping
+-- manually-maintained profile data:
+--   * `role` may only be changed by an admin (service role / SQL editor);
+--     a client upsert that sneaks in `role = 'farmer'` is silently ignored.
+--   * an existing non-empty column is never nulled out (e.g. a login sync
+--     that derives `middle_name` as null can't blank a dashboard-set name).
+-- PostgREST sets `request.jwt.claims` per request; when it's absent (SQL
+-- editor / direct DB access) the call is treated as an admin.
+
+create or replace function public.guard_user_profile()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_jwt_role text := coalesce(
+    current_setting('request.jwt.claims', true)::jsonb ->> 'role',
+    'service_role'
+  );
+begin
+  if v_jwt_role <> 'service_role' then
+    new.role := old.role;
+  end if;
+
+  if nullif(new.first_name, '') is null and nullif(old.first_name, '') is not null then
+    new.first_name := old.first_name;
+  end if;
+  if nullif(new.middle_name, '') is null and nullif(old.middle_name, '') is not null then
+    new.middle_name := old.middle_name;
+  end if;
+  if nullif(new.last_name, '') is null and nullif(old.last_name, '') is not null then
+    new.last_name := old.last_name;
+  end if;
+  if nullif(new.avatar_url, '') is null and nullif(old.avatar_url, '') is not null then
+    new.avatar_url := old.avatar_url;
+  end if;
+  if nullif(new.email, '') is null and nullif(old.email, '') is not null then
+    new.email := old.email;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists guard_user_profile on public.users;
+create trigger guard_user_profile
+  before update on public.users
+  for each row execute procedure public.guard_user_profile();
+
 -- ── Grants ────────────────────────────────────────────────────────────────
 -- Restore the privileges Supabase ships by default. If the `public` schema is
 -- ever dropped/recreated without these, every PostgREST call fails with
@@ -157,10 +206,12 @@ drop policy if exists "likes select" on public.likes;
 drop policy if exists "likes insert" on public.likes;
 drop policy if exists "likes delete" on public.likes;
 drop policy if exists "farms select" on public.farms;
+drop policy if exists "farms panuluyan read" on public.farms;
 drop policy if exists "farms insert" on public.farms;
 drop policy if exists "farms update" on public.farms;
 drop policy if exists "farms delete" on public.farms;
 drop policy if exists "trees select" on public.trees;
+drop policy if exists "trees panuluyan read" on public.trees;
 drop policy if exists "trees insert" on public.trees;
 drop policy if exists "trees update" on public.trees;
 drop policy if exists "trees delete" on public.trees;
@@ -207,9 +258,18 @@ create policy "likes delete" on public.likes
   for delete to authenticated
   using (user_id = auth.uid());
 
--- Farms and trees are private to their owner.
+-- Farms are private to their owner, but `panuluyan` monitors every farm in
+-- read-only mode (no insert/update/delete — those stay owner-scoped above).
 create policy "farms select" on public.farms
   for select to authenticated using (owner_id = auth.uid());
+create policy "farms panuluyan read" on public.farms
+  for select to authenticated
+  using (
+    exists (
+      select 1 from public.users u
+      where u.id = auth.uid() and u.role = 'panuluyan'
+    )
+  );
 create policy "farms insert" on public.farms
   for insert to authenticated with check (owner_id = auth.uid());
 create policy "farms update" on public.farms
@@ -223,6 +283,14 @@ create policy "trees select" on public.trees
     exists (
       select 1 from public.farms f
       where f.id = trees.farm_id and f.owner_id = auth.uid()
+    )
+  );
+create policy "trees panuluyan read" on public.trees
+  for select to authenticated
+  using (
+    exists (
+      select 1 from public.users u
+      where u.id = auth.uid() and u.role = 'panuluyan'
     )
   );
 create policy "trees insert" on public.trees

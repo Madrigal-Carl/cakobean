@@ -245,7 +245,6 @@ class _CreateArticlePageState extends ConsumerState<CreateArticlePage> {
                     ext: ext,
                     controller: _titleController,
                     hint: 'e.g. Sooty pod disease alert this rainy season',
-                    prefixIcon: Icons.title_rounded,
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? 'Required' : null,
                   ),
@@ -256,7 +255,6 @@ class _CreateArticlePageState extends ConsumerState<CreateArticlePage> {
                     ext: ext,
                     controller: _descriptionController,
                     hint: 'Share the details — what farmers should know...',
-                    prefixIcon: Icons.notes_rounded,
                     maxLines: 5,
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? 'Required' : null,
@@ -279,7 +277,9 @@ class _CreateArticlePageState extends ConsumerState<CreateArticlePage> {
                     children: [
                       FarmFieldLabel(
                         ext: ext,
-                        text: 'Photos & videos',
+                        text: _media.isEmpty
+                            ? 'Photos & videos'
+                            : 'Photos & videos (${_media.length})',
                       ),
                       TextButton.icon(
                         onPressed: _picking || _publishing
@@ -291,12 +291,31 @@ class _CreateArticlePageState extends ConsumerState<CreateArticlePage> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: AppSpacing.x2),
                   if (_media.isEmpty)
-                    _EmptyMediaTile(ext: ext, onTap: _showAddMediaSheet)
+                    _EmptyMediaTile(
+                      ext: ext,
+                      enabled: !_picking && !_publishing,
+                      onPickImage: () => _pickFromSource(
+                        source: ImageSource.camera,
+                        type: MediaType.image,
+                      ),
+                      onPickGallery: () => _pickFromSource(
+                        source: ImageSource.gallery,
+                        type: MediaType.image,
+                      ),
+                      onPickVideo: () => _pickFromSource(
+                        source: ImageSource.gallery,
+                        type: MediaType.video,
+                      ),
+                    )
                   else
                     _MediaGrid(
                       ext: ext,
                       items: _media,
+                      onAdd: _picking || _publishing
+                          ? null
+                          : _showAddMediaSheet,
                       onRemove: _publishing
                           ? null
                           : (index) =>
@@ -307,18 +326,26 @@ class _CreateArticlePageState extends ConsumerState<CreateArticlePage> {
                     _PublishErrorBanner(message: _error!),
                   ],
                   const SizedBox(height: AppSpacing.x5),
-                  FilledButton(
-                    onPressed: _publishing ? null : _publish,
-                    child: _publishing
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: AppColors.creamLight,
-                            ),
-                          )
-                        : const Text('Publish'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _publishing ? null : _publish,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.x3,
+                        ),
+                      ),
+                      child: _publishing
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: AppColors.creamLight,
+                              ),
+                            )
+                          : const Text('Publish'),
+                    ),
                   ),
                 ],
               ),
@@ -392,34 +419,130 @@ class _TagSelector extends StatelessWidget {
   }
 }
 
-/// Dashed-style empty state prompting the author to add their first media.
+/// Dashed-style empty state prompting the author to add their first media,
+/// with one-tap quick actions for camera/gallery/video.
 class _EmptyMediaTile extends StatelessWidget {
   final AppThemeExtension ext;
-  final VoidCallback onTap;
+  final bool enabled;
+  final VoidCallback onPickImage;
+  final VoidCallback onPickGallery;
+  final VoidCallback onPickVideo;
 
-  const _EmptyMediaTile({required this.ext, required this.onTap});
+  const _EmptyMediaTile({
+    required this.ext,
+    this.enabled = true,
+    required this.onPickImage,
+    required this.onPickGallery,
+    required this.onPickVideo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.x4,
+        vertical: AppSpacing.x5,
+      ),
+      decoration: BoxDecoration(
+        color: ext.sand,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: ext.hairline),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: ext.cardSurface,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(
+              Icons.add_photo_alternate_outlined,
+              size: 24,
+              color: ext.cocoa50,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.x3),
+          Text(
+            'Add photos or videos of the crop condition',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: ext.cocoa50),
+          ),
+          const SizedBox(height: AppSpacing.x4),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.x2,
+            runSpacing: AppSpacing.x2,
+            children: [
+              _QuickMediaAction(
+                ext: ext,
+                icon: Icons.photo_camera_outlined,
+                label: 'Camera',
+                onTap: enabled ? onPickImage : null,
+              ),
+              _QuickMediaAction(
+                ext: ext,
+                icon: Icons.photo_library_outlined,
+                label: 'Gallery',
+                onTap: enabled ? onPickGallery : null,
+              ),
+              _QuickMediaAction(
+                ext: ext,
+                icon: Icons.videocam_outlined,
+                label: 'Video',
+                onTap: enabled ? onPickVideo : null,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small bordered action chip used inside the media empty state.
+class _QuickMediaAction extends StatelessWidget {
+  final AppThemeExtension ext;
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  const _QuickMediaAction({
+    required this.ext,
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
-        height: 120,
-        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.x3,
+          vertical: AppSpacing.x2,
+        ),
         decoration: BoxDecoration(
-          color: ext.sand,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          color: ext.cardSurface,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(color: ext.hairline),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add_photo_alternate_outlined, size: 32, color: ext.cocoa50),
-            const SizedBox(height: AppSpacing.x2),
+            Icon(icon, size: 16, color: ext.ember),
+            const SizedBox(width: 6),
             Text(
-              'Add photos or videos of the crop condition',
-              style: TextStyle(fontSize: 13, color: ext.cocoa50),
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: ext.cocoa,
+              ),
             ),
           ],
         ),
@@ -428,14 +551,21 @@ class _EmptyMediaTile extends StatelessWidget {
   }
 }
 
-/// Thumbnail grid of picked media. Videos show a play badge since a video
-/// can't be thumbnailed without decoding its first frame.
+/// Thumbnail grid of picked media with a trailing "add more" tile. Videos show
+/// a play badge since a video can't be thumbnailed without decoding its first
+/// frame.
 class _MediaGrid extends StatelessWidget {
   final AppThemeExtension ext;
   final List<PickedMedia> items;
+  final VoidCallback? onAdd;
   final ValueChanged<int>? onRemove;
 
-  const _MediaGrid({required this.ext, required this.items, this.onRemove});
+  const _MediaGrid({
+    required this.ext,
+    required this.items,
+    this.onAdd,
+    this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -485,6 +615,19 @@ class _MediaGrid extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
+        if (onAdd != null)
+          InkWell(
+            onTap: onAdd,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Container(
+              decoration: BoxDecoration(
+                color: ext.sand,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: ext.hairline),
+              ),
+              child: Icon(Icons.add_rounded, size: 28, color: ext.cocoa50),
+            ),
           ),
       ],
     );

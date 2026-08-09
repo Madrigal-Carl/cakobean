@@ -13,8 +13,14 @@ import 'package:cakobean/ui/features/farm/widgets/farm_sheet.dart';
 class FarmCard extends ConsumerWidget {
   final FarmModel farm;
   final AppThemeExtension ext;
+  final bool canManage;
 
-  const FarmCard({super.key, required this.farm, required this.ext});
+  const FarmCard({
+    super.key,
+    required this.farm,
+    required this.ext,
+    this.canManage = true,
+  });
 
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
     final result = await showFarmSheet(context, farm: farm);
@@ -126,32 +132,34 @@ class FarmCard extends ConsumerWidget {
                     ),
                     const SizedBox(width: AppSpacing.x2),
                     FarmTreeCountChip(ext: ext, farmId: farm.id),
-                    const SizedBox(width: AppSpacing.x2),
-                    InkWell(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      onTap: () => _edit(context, ref),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.edit_outlined,
-                          size: 18,
-                          color: ext.cocoa50,
+                    if (canManage) ...[
+                      const SizedBox(width: AppSpacing.x2),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        onTap: () => _edit(context, ref),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            size: 18,
+                            color: ext.cocoa50,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.x2),
-                    InkWell(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      onTap: () => _delete(context, ref),
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          size: 18,
-                          color: Colors.redAccent,
+                      const SizedBox(width: AppSpacing.x2),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        onTap: () => _delete(context, ref),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.delete_outline_rounded,
+                            size: 18,
+                            color: Colors.redAccent,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ],

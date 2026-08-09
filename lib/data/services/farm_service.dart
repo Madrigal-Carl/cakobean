@@ -25,6 +25,13 @@ class FarmService {
         .eq('owner_id', ownerId);
   }
 
+  /// Live list of ALL farms (every owner). Only usable by `panuluyan` — the
+  /// read policy for that role returns every farm, and PostgREST filters the
+  /// rows themselves, so other roles still only see their own farms.
+  Stream<List<Map<String, dynamic>>> watchAllFarms() {
+    return _client.from('farms').stream(primaryKey: ['id']);
+  }
+
   /// Live single farm row. Emits null when the farm doesn't exist.
   Stream<Map<String, dynamic>?> watchFarm(String farmId) {
     return supabaseLiveStream(

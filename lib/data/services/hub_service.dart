@@ -68,7 +68,8 @@ class HubService {
   }
 
   /// Upserts a user's public profile into the `users` table. The primary key
-  /// is `id` (the auth user's id); omitted columns are preserved on conflict.
+  /// is `id` (the auth user's id); omitted columns are preserved on conflict,
+  /// so [data] may contain only the fields that actually need writing.
   Future<void> upsertUser(String userId, Map<String, dynamic> data) {
     return _client.from('users').upsert({'id': userId, ...data});
   }

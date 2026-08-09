@@ -59,11 +59,13 @@ class _FarmPageState extends ConsumerState<FarmPage> {
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppThemeExtension>()!;
     final farmsAsync = ref.watch(farmsProvider);
+    final isPanuluyan = isPanuluyanRole(ref.watch(farmRoleProvider));
+    final uid = ref.watch(farmCurrentUserIdProvider);
 
     return Scaffold(
       backgroundColor: ext.cream,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: AddButton(ext: ext, onTap: _addFarm),
+      floatingActionButton: isPanuluyan ? null : AddButton(ext: ext, onTap: _addFarm),
       body: SafeArea(
         bottom: false,
         child: LayoutBuilder(
@@ -84,8 +86,10 @@ class _FarmPageState extends ConsumerState<FarmPage> {
                     constraints: BoxConstraints(maxWidth: maxContentWidth),
                     child: PageHeader(
                       ext: ext,
-                      title: 'My Farms',
-                      subtitle: 'Manage your registered farms',
+                      title: isPanuluyan ? 'All Farms' : 'My Farms',
+                      subtitle: isPanuluyan
+                          ? 'Monitor all registered farms'
+                          : 'Manage your registered farms',
                       showSearch: true,
                       searchController: _searchController,
                       searchHint: 'Search farms by address',
@@ -94,7 +98,15 @@ class _FarmPageState extends ConsumerState<FarmPage> {
                     ),
                   ),
                 ),
-                Expanded(child: _buildBody(ext, farmsAsync, maxContentWidth)),
+                Expanded(
+                  child: _buildBody(
+                    ext,
+                    farmsAsync,
+                    maxContentWidth,
+                    isPanuluyan,
+                    uid,
+                  ),
+                ),
               ],
             );
           },
@@ -107,6 +119,8 @@ class _FarmPageState extends ConsumerState<FarmPage> {
     AppThemeExtension ext,
     AsyncValue<List<FarmModel>> farmsAsync,
     double maxContentWidth,
+    bool isPanuluyan,
+    String? uid,
   ) {
     return farmsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -123,7 +137,9 @@ class _FarmPageState extends ConsumerState<FarmPage> {
           return EmptyState(
             ext: ext,
             icon: Icons.agriculture_rounded,
-            message: 'No farms yet.\nAdd your first farm to get started.',
+            message: isPanuluyan
+                ? 'No farms registered yet.'
+                : 'No farms yet.\nAdd your first farm to get started.',
           );
         }
         if (farms.isEmpty) {
@@ -155,7 +171,11 @@ class _FarmPageState extends ConsumerState<FarmPage> {
               itemBuilder: (context, i) {
                 return StaggerIn(
                   index: i,
-                  child: FarmCard(farm: farms[i], ext: ext),
+                  child: FarmCard(
+                    farm: farms[i],
+                    ext: ext,
+                    canManage: uid != null && farms[i].ownerId == uid,
+                  ),
                 );
               },
             ),

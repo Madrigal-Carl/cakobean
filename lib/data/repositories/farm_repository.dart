@@ -21,6 +21,14 @@ class FarmRepository {
         .map((rows) => rows.map(_farmFromRow).toList());
   }
 
+  /// Live list of ALL farms. `panuluyan` may read every farm (read-only);
+  /// every other role is limited to their own by the database policy.
+  Stream<List<FarmModel>> watchAllFarms() {
+    return _service
+        .watchAllFarms()
+        .map((rows) => rows.map(_farmFromRow).toList());
+  }
+
   /// Live single farm. Null when the row doesn't exist (e.g. deleted).
   Stream<FarmModel?> watchFarm(String farmId) {
     return _service.watchFarm(farmId).map(
@@ -125,6 +133,7 @@ class FarmRepository {
   static FarmModel _farmFromRow(Map<String, dynamic> row) {
     return FarmModel(
       id: row['id'] as String? ?? '',
+      ownerId: row['owner_id'] as String? ?? '',
       address: row['address'] as String? ?? '',
       sizeHectares: (row['size_hectares'] as num?)?.toDouble() ?? 0,
       latitude: (row['latitude'] as num?)?.toDouble(),

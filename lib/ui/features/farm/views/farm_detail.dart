@@ -146,10 +146,12 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
     final ext = Theme.of(context).extension<AppThemeExtension>()!;
     final textTheme = Theme.of(context).textTheme;
     final hasLocation = farm.latitude != null && farm.longitude != null;
+    final uid = ref.watch(farmCurrentUserIdProvider);
+    final canManage = uid != null && farm.ownerId == uid;
 
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(child: _buildHeader(context, ext, farm)),
+        SliverToBoxAdapter(child: _buildHeader(context, ext, farm, canManage)),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -305,10 +307,35 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
                     _TreeCountChip(ext: ext, farmId: farm.id),
                   ],
                 ),
+                if (!canManage) ...[
+                  const SizedBox(height: AppSpacing.x3),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.x3,
+                      vertical: AppSpacing.x2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ext.sand,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.visibility_outlined,
+                            size: 15, color: ext.cocoa50),
+                        const SizedBox(width: AppSpacing.x1),
+                        Text(
+                          'Read-only view',
+                          style: TextStyle(fontSize: 12, color: ext.cocoa50),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.x5),
                 Divider(color: ext.hairline, height: 1),
                 const SizedBox(height: AppSpacing.x5),
-                _buildTreesSection(context, ext, farm),
+                _buildTreesSection(context, ext, farm, canManage),
               ],
             ),
           ),
@@ -322,6 +349,7 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
     BuildContext context,
     AppThemeExtension ext,
     FarmModel farm,
+    bool canManage,
   ) {
     final textTheme = Theme.of(context).textTheme;
     final treesAsync = ref.watch(farmTreesProvider(farm.id));
@@ -342,28 +370,29 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
                 ),
               ),
             ),
-            FilledButton.icon(
-              onPressed: () => _addTree(farm),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.ember,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.x3,
-                  vertical: 10,
+            if (canManage)
+              FilledButton.icon(
+                onPressed: () => _addTree(farm),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.ember,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.x3,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                label: const Text(
+                  'Add Tree',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-              icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
-              label: const Text(
-                'Add Tree',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
           ],
         ),
         const SizedBox(height: AppSpacing.x3),
@@ -409,6 +438,7 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
                   _TreeCard(
                     ext: ext,
                     tree: trees[i],
+                    canManage: canManage,
                     onEdit: () => _editTree(trees[i]),
                     onDelete: () => _deleteTree(trees[i]),
                     onStatusTap: () => _changeTreeStatus(trees[i]),
@@ -423,7 +453,12 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, AppThemeExtension ext, FarmModel farm) {
+  Widget _buildHeader(
+    BuildContext context,
+    AppThemeExtension ext,
+    FarmModel farm,
+    bool canManage,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.x5,
@@ -450,18 +485,40 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
             ),
           ),
           const Spacer(),
-          InkWell(
-            onTap: () => _edit(farm),
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.x2),
+          if (canManage)
+            InkWell(
+              onTap: () => _edit(farm),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.x2),
+                decoration: BoxDecoration(
+                  color: ext.sand,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.edit_rounded, color: ext.cocoa, size: 20),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.x3,
+                vertical: AppSpacing.x2,
+              ),
               decoration: BoxDecoration(
                 color: ext.sand,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
-              child: Icon(Icons.edit_rounded, color: ext.cocoa, size: 20),
+              child: Row(
+                children: [
+                  Icon(Icons.visibility_outlined, size: 15, color: ext.cocoa50),
+                  const SizedBox(width: AppSpacing.x1),
+                  Text(
+                    'Read-only',
+                    style: TextStyle(fontSize: 12, color: ext.cocoa50),
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -588,6 +645,7 @@ class _TreesEmpty extends StatelessWidget {
 class _TreeCard extends StatelessWidget {
   final CacaoTree tree;
   final AppThemeExtension ext;
+  final bool canManage;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onStatusTap;
@@ -595,6 +653,7 @@ class _TreeCard extends StatelessWidget {
   const _TreeCard({
     required this.tree,
     required this.ext,
+    this.canManage = true,
     required this.onEdit,
     required this.onDelete,
     required this.onStatusTap,
@@ -608,7 +667,7 @@ class _TreeCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          onTap: onEdit,
+          onTap: canManage ? onEdit : null,
           child: Container(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.x4,
@@ -652,19 +711,21 @@ class _TreeCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          _TreeCardIconButton(
-                            icon: Icons.edit_outlined,
-                            color: ext.cocoa50,
-                            tooltip: 'Edit tree',
-                            onTap: onEdit,
-                          ),
-                          const SizedBox(width: AppSpacing.x1),
-                          _TreeCardIconButton(
-                            icon: Icons.delete_outline_rounded,
-                            color: Colors.redAccent,
-                            tooltip: 'Remove tree',
-                            onTap: onDelete,
-                          ),
+                          if (canManage) ...[
+                            _TreeCardIconButton(
+                              icon: Icons.edit_outlined,
+                              color: ext.cocoa50,
+                              tooltip: 'Edit tree',
+                              onTap: onEdit,
+                            ),
+                            const SizedBox(width: AppSpacing.x1),
+                            _TreeCardIconButton(
+                              icon: Icons.delete_outline_rounded,
+                              color: Colors.redAccent,
+                              tooltip: 'Remove tree',
+                              onTap: onDelete,
+                            ),
+                          ],
                         ],
                       ),
                       if (tree.variety != null && tree.variety!.isNotEmpty) ...[
@@ -697,7 +758,7 @@ class _TreeCard extends StatelessWidget {
                       TreeStatusPill(
                         ext: ext,
                         status: tree.status,
-                        onTap: onStatusTap,
+                        onTap: canManage ? onStatusTap : null,
                       ),
                     ],
                   ),

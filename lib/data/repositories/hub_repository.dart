@@ -252,14 +252,19 @@ class HubRepository {
     );
   }
 
+  /// Maps a profile for upsert. Only fields with meaningful values are sent:
+  /// the sync never writes `role` (managed by admins in the dashboard, never
+  /// the client) and never writes empty/null fields, so manual edits made in
+  /// the Supabase table editor (middle name, avatar, etc.) survive sign-in.
   static Map<String, dynamic> _userToMap(HubUser user) {
     return {
-      'first_name': user.firstName,
-      'middle_name': user.middleName,
-      'last_name': user.lastName,
-      'email': user.email,
-      'avatar_url': user.avatarUrl,
-      'role': user.role,
+      if (user.firstName.trim().isNotEmpty) 'first_name': user.firstName,
+      if (user.middleName != null && user.middleName!.trim().isNotEmpty)
+        'middle_name': user.middleName,
+      if (user.lastName.trim().isNotEmpty) 'last_name': user.lastName,
+      if (user.email.trim().isNotEmpty) 'email': user.email,
+      if (user.avatarUrl.isNotEmpty && user.avatarUrl != defaultAvatarUrl)
+        'avatar_url': user.avatarUrl,
     };
   }
 
