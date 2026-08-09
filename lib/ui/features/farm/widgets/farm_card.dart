@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/farm.dart';
+import 'package:cakobean/ui/core/widgets/confirm_dialog.dart';
 import 'package:cakobean/ui/core/widgets/pressable_scale.dart';
 import 'package:cakobean/ui/core/widgets/stat_chip.dart';
 import 'package:cakobean/ui/features/farm/view_models/farm_viewmodel.dart';
@@ -24,7 +25,6 @@ class FarmCard extends ConsumerWidget {
           id: farm.id,
           address: result.address,
           sizeHectares: result.sizeHectares,
-          cacaoTrees: result.cacaoTrees,
           latitude: result.location?.latitude,
           longitude: result.location?.longitude,
         ),
@@ -39,27 +39,13 @@ class FarmCard extends ConsumerWidget {
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete farm?'),
-        content: Text(
-          '"${farm.address}" will be permanently removed from your farms.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.redAccent),
-            ),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      icon: Icons.delete_outline_rounded,
+      title: 'Delete farm?',
+      message: '"${farm.address}" will be permanently removed from your '
+          'farms.',
+      confirmLabel: 'Delete',
     );
     if (confirmed != true) return;
     try {
@@ -139,11 +125,7 @@ class FarmCard extends ConsumerWidget {
                       label: '${farm.sizeHectares.toStringAsFixed(1)} ha',
                     ),
                     const SizedBox(width: AppSpacing.x2),
-                    StatChip(
-                      ext: ext,
-                      icon: Icons.park_outlined,
-                      label: '${farm.cacaoTrees} trees',
-                    ),
+                    FarmTreeCountChip(ext: ext, farmId: farm.id),
                     const SizedBox(width: AppSpacing.x2),
                     InkWell(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -178,5 +160,25 @@ class FarmCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// Live tree count chip shown on a farm card. The count comes from the
+/// farm's actual tree records, so it stays accurate as trees are added or
+/// removed on the detail page.
+class FarmTreeCountChip extends ConsumerWidget {
+  final AppThemeExtension ext;
+  final String farmId;
+
+  const FarmTreeCountChip({super.key, required this.ext, required this.farmId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trees = ref.watch(farmTreesProvider(farmId));
+    final count = trees.maybeWhen(data: (t) => t.length, orElse: () => null);
+    final label = count == null
+        ? '— trees'
+        : '$count ${count == 1 ? 'tree' : 'trees'}';
+    return StatChip(ext: ext, icon: Icons.park_outlined, label: label);
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cakobean/data/repositories/farm_repository.dart';
+import 'package:cakobean/domain/models/cacao_tree.dart';
 import 'package:cakobean/domain/models/farm.dart';
 import 'package:cakobean/ui/features/auth/view_models/auth_viewmodel.dart';
 
@@ -22,4 +23,10 @@ final farmsProvider = StreamProvider<List<FarmModel>>((ref) {
 /// exist (e.g. the farm was deleted).
 final farmProvider = StreamProvider.family<FarmModel?, String>(
   (ref, farmId) => ref.watch(farmRepositoryProvider).watchFarm(farmId),
+);
+
+/// Live list of a farm's cacao trees, used by the detail page (and to show
+/// the derived tree count on the farm cards).
+final farmTreesProvider = StreamProvider.family<List<CacaoTree>, String>(
+  (ref, farmId) => ref.watch(farmRepositoryProvider).watchTrees(farmId),
 );

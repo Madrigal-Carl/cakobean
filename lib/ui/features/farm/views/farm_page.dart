@@ -43,7 +43,6 @@ class _FarmPageState extends ConsumerState<FarmPage> {
       await ref.read(farmRepositoryProvider).addFarm(
             address: result.address,
             sizeHectares: result.sizeHectares,
-            cacaoTrees: result.cacaoTrees,
             latitude: result.location?.latitude,
             longitude: result.location?.longitude,
           );

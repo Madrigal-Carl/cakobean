@@ -3,25 +3,26 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/farm.dart';
+import 'package:cakobean/ui/features/farm/widgets/form_field.dart';
 import 'package:cakobean/ui/features/farm/widgets/location_picker_map.dart';
 
 /// Result handed back to the caller when the user saves the form.
 class FarmSheetResult {
   final String address;
   final double sizeHectares;
-  final int cacaoTrees;
   final LatLng? location;
 
   const FarmSheetResult({
     required this.address,
     required this.sizeHectares,
-    required this.cacaoTrees,
     this.location,
   });
 }
 
 /// Bottom-sheet form for adding or editing a farm. Shown via [showFarmSheet].
 /// Pass [farm] to pre-fill the form for editing; omit it to add a new farm.
+/// Trees aren't part of this form — they're managed from the farm detail
+/// page, so the farm's tree count is derived from actual tree records.
 class FarmSheet extends StatefulWidget {
   final FarmModel? farm;
 
@@ -35,7 +36,6 @@ class _FarmSheetState extends State<FarmSheet> {
   final _formKey = GlobalKey<FormState>();
   final _addressController = TextEditingController();
   final _sizeController = TextEditingController();
-  final _treesController = TextEditingController();
   LatLng? _pickedLatLng;
 
   bool get _isEditing => widget.farm != null;
@@ -47,7 +47,6 @@ class _FarmSheetState extends State<FarmSheet> {
     if (farm != null) {
       _addressController.text = farm.address;
       _sizeController.text = farm.sizeHectares.toString();
-      _treesController.text = farm.cacaoTrees.toString();
       if (farm.latitude != null && farm.longitude != null) {
         _pickedLatLng = LatLng(farm.latitude!, farm.longitude!);
       }
@@ -58,7 +57,6 @@ class _FarmSheetState extends State<FarmSheet> {
   void dispose() {
     _addressController.dispose();
     _sizeController.dispose();
-    _treesController.dispose();
     super.dispose();
   }
 
@@ -85,7 +83,6 @@ class _FarmSheetState extends State<FarmSheet> {
       FarmSheetResult(
         address: _addressController.text.trim(),
         sizeHectares: double.parse(_sizeController.text.trim()),
-        cacaoTrees: int.parse(_treesController.text.trim()),
         location: _pickedLatLng,
       ),
     );
@@ -134,30 +131,49 @@ class _FarmSheetState extends State<FarmSheet> {
                         ),
                       ),
                     ),
-                    Text(
-                      _isEditing ? 'Edit Farm' : 'Add Farm',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineSmall?.copyWith(color: ext.cocoa),
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: ext.sand,
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Icon(
+                            Icons.agriculture_rounded,
+                            color: AppColors.ember,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.x3),
+                        Text(
+                          _isEditing ? 'Edit Farm' : 'Add Farm',
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(color: ext.cocoa),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.x4),
-                    _FieldLabel(ext: ext, text: 'Address'),
+                    FarmFieldLabel(ext: ext, text: 'Address'),
                     const SizedBox(height: AppSpacing.x1),
-                    _FormField(
+                    FarmFormField(
                       ext: ext,
                       controller: _addressController,
                       hint: 'Sitio, Barangay, City/Municipality',
+                      prefixIcon: Icons.place_outlined,
                       maxLines: 2,
                       validator: (v) =>
                           (v == null || v.trim().isEmpty) ? 'Required' : null,
                     ),
                     const SizedBox(height: AppSpacing.x3),
-                    _FieldLabel(ext: ext, text: 'Size (hectares)'),
+                    FarmFieldLabel(ext: ext, text: 'Size (hectares)'),
                     const SizedBox(height: AppSpacing.x1),
-                    _FormField(
+                    FarmFormField(
                       ext: ext,
                       controller: _sizeController,
                       hint: 'e.g. 3.2',
+                      prefixIcon: Icons.straighten_rounded,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
@@ -169,22 +185,7 @@ class _FarmSheetState extends State<FarmSheet> {
                       },
                     ),
                     const SizedBox(height: AppSpacing.x3),
-                    _FieldLabel(ext: ext, text: 'Cacao trees'),
-                    const SizedBox(height: AppSpacing.x1),
-                    _FormField(
-                      ext: ext,
-                      controller: _treesController,
-                      hint: 'e.g. 25',
-                      keyboardType: TextInputType.number,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Required';
-                        final n = int.tryParse(v.trim());
-                        if (n == null || n <= 0) return 'Enter a valid count';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.x3),
-                    _FieldLabel(ext: ext, text: 'Farm location'),
+                    FarmFieldLabel(ext: ext, text: 'Farm location'),
                     const SizedBox(height: AppSpacing.x1),
                     InkWell(
                       onTap: _pickLocation,
@@ -242,15 +243,6 @@ class _FarmSheetState extends State<FarmSheet> {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.ember,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.x3,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                          ),
-                        ),
                         onPressed: _save,
                         child: Text(_isEditing ? 'Update Farm' : 'Save Farm'),
                       ),
@@ -260,72 +252,6 @@ class _FarmSheetState extends State<FarmSheet> {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FieldLabel extends StatelessWidget {
-  final AppThemeExtension ext;
-  final String text;
-
-  const _FieldLabel({required this.ext, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 12.5,
-        fontWeight: FontWeight.w600,
-        color: ext.cocoa50,
-      ),
-    );
-  }
-}
-
-class _FormField extends StatelessWidget {
-  final AppThemeExtension ext;
-  final TextEditingController controller;
-  final String hint;
-  final int maxLines;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-
-  const _FormField({
-    required this.ext,
-    required this.controller,
-    required this.hint,
-    this.maxLines = 1,
-    this.keyboardType,
-    this.validator,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      validator: validator,
-      style: TextStyle(fontSize: 14, color: ext.cocoa),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(fontSize: 14, color: ext.cocoa50),
-        filled: true,
-        fillColor: ext.sand,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.x3,
-          vertical: AppSpacing.x3,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: BorderSide.none,
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: const BorderSide(color: Colors.redAccent),
         ),
       ),
     );
