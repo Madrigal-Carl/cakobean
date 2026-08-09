@@ -9,11 +9,13 @@ import 'package:cakobean/ui/features/farm/widgets/location_picker_map.dart';
 class FarmSheetResult {
   final String address;
   final double sizeHectares;
+  final int cacaoTrees;
   final LatLng? location;
 
   const FarmSheetResult({
     required this.address,
     required this.sizeHectares,
+    required this.cacaoTrees,
     this.location,
   });
 }
@@ -33,6 +35,7 @@ class _FarmSheetState extends State<FarmSheet> {
   final _formKey = GlobalKey<FormState>();
   final _addressController = TextEditingController();
   final _sizeController = TextEditingController();
+  final _treesController = TextEditingController();
   LatLng? _pickedLatLng;
 
   bool get _isEditing => widget.farm != null;
@@ -44,6 +47,7 @@ class _FarmSheetState extends State<FarmSheet> {
     if (farm != null) {
       _addressController.text = farm.address;
       _sizeController.text = farm.sizeHectares.toString();
+      _treesController.text = farm.cacaoTrees.toString();
       if (farm.latitude != null && farm.longitude != null) {
         _pickedLatLng = LatLng(farm.latitude!, farm.longitude!);
       }
@@ -54,6 +58,7 @@ class _FarmSheetState extends State<FarmSheet> {
   void dispose() {
     _addressController.dispose();
     _sizeController.dispose();
+    _treesController.dispose();
     super.dispose();
   }
 
@@ -80,6 +85,7 @@ class _FarmSheetState extends State<FarmSheet> {
       FarmSheetResult(
         address: _addressController.text.trim(),
         sizeHectares: double.parse(_sizeController.text.trim()),
+        cacaoTrees: int.parse(_treesController.text.trim()),
         location: _pickedLatLng,
       ),
     );
@@ -159,6 +165,21 @@ class _FarmSheetState extends State<FarmSheet> {
                         if (v == null || v.trim().isEmpty) return 'Required';
                         final n = double.tryParse(v.trim());
                         if (n == null || n <= 0) return 'Enter a valid size';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.x3),
+                    _FieldLabel(ext: ext, text: 'Cacao trees'),
+                    const SizedBox(height: AppSpacing.x1),
+                    _FormField(
+                      ext: ext,
+                      controller: _treesController,
+                      hint: 'e.g. 25',
+                      keyboardType: TextInputType.number,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Required';
+                        final n = int.tryParse(v.trim());
+                        if (n == null || n <= 0) return 'Enter a valid count';
                         return null;
                       },
                     ),

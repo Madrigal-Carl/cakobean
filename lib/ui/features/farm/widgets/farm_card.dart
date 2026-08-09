@@ -1,20 +1,80 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/farm.dart';
 import 'package:cakobean/ui/core/widgets/pressable_scale.dart';
 import 'package:cakobean/ui/core/widgets/stat_chip.dart';
+import 'package:cakobean/ui/features/farm/view_models/farm_viewmodel.dart';
 import 'package:cakobean/ui/features/farm/widgets/farm_sheet.dart';
 
-class FarmCard extends StatelessWidget {
+class FarmCard extends ConsumerWidget {
   final FarmModel farm;
   final AppThemeExtension ext;
 
   const FarmCard({super.key, required this.farm, required this.ext});
 
+  Future<void> _edit(BuildContext context, WidgetRef ref) async {
+    final result = await showFarmSheet(context, farm: farm);
+    if (result == null) return;
+    try {
+      await ref.read(farmRepositoryProvider).updateFarm(
+        FarmModel(
+          id: farm.id,
+          address: result.address,
+          sizeHectares: result.sizeHectares,
+          cacaoTrees: result.cacaoTrees,
+          latitude: result.location?.latitude,
+          longitude: result.location?.longitude,
+        ),
+      );
+    } on Exception catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Couldn\'t update farm: $e')));
+      }
+    }
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete farm?'),
+        content: Text(
+          '"${farm.address}" will be permanently removed from your farms.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(farmRepositoryProvider).deleteFarm(farm.id);
+    } on Exception catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Couldn\'t delete farm: $e')));
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return PressableScale(
       child: Material(
         color: Colors.transparent,
@@ -87,7 +147,7 @@ class FarmCard extends StatelessWidget {
                     const SizedBox(width: AppSpacing.x2),
                     InkWell(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      onTap: () => showFarmSheet(context, farm: farm),
+                      onTap: () => _edit(context, ref),
                       child: Padding(
                         padding: const EdgeInsets.all(4),
                         child: Icon(
@@ -100,9 +160,7 @@ class FarmCard extends StatelessWidget {
                     const SizedBox(width: AppSpacing.x2),
                     InkWell(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      onTap: () {
-                        // TODO: wire up delete functionality
-                      },
+                      onTap: () => _delete(context, ref),
                       child: const Padding(
                         padding: EdgeInsets.all(4),
                         child: Icon(
