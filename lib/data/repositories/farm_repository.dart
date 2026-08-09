@@ -1,13 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:cakobean/data/repositories/auth_repository.dart';
 import 'package:cakobean/data/services/farm_service.dart';
 import 'package:cakobean/domain/models/cacao_tree.dart';
 import 'package:cakobean/domain/models/farm.dart';
 
-/// Domain-facing repository over [FarmService]. Maps raw Firestore documents
-/// to [FarmModel]/[CacaoTree] and exposes the CRUD operations the UI needs.
-/// UI code never touches Firestore directly.
+/// Domain-facing repository over [FarmService]. Maps raw Supabase rows to
+/// [FarmModel]/[CacaoTree] and exposes the CRUD operations the UI needs.
+/// UI code never touches Supabase directly.
 class FarmRepository {
   FarmRepository({FarmService? service, AuthRepository? auth})
       : _service = service ?? FarmService(),
@@ -20,19 +18,21 @@ class FarmRepository {
   Stream<List<FarmModel>> watchFarms() {
     return _service
         .watchFarms(ownerId)
-        .map((docs) => docs.map(_farmFromFirestore).toList());
+        .map((rows) => rows.map(_farmFromRow).toList());
   }
 
-  /// Live single farm. Null when the document doesn't exist (e.g. deleted).
+  /// Live single farm. Null when the row doesn't exist (e.g. deleted).
   Stream<FarmModel?> watchFarm(String farmId) {
-    return _service.watchFarm(farmId).map(_farmFromSnapshot);
+    return _service.watchFarm(farmId).map(
+          (row) => row == null ? null : _farmFromRow(row),
+        );
   }
 
   /// Live list of a farm's cacao trees.
   Stream<List<CacaoTree>> watchTrees(String farmId) {
     return _service
         .watchTrees(farmId)
-        .map((docs) => docs.map(_treeFromFirestore).toList());
+        .map((rows) => rows.map(_treeFromRow).toList());
   }
 
   /// Creates a farm as the current user and returns it so the UI can show it
@@ -48,16 +48,15 @@ class FarmRepository {
       throw ArgumentError('Farm address must not be empty.');
     }
     final data = <String, dynamic>{
-      'ownerId': ownerId,
+      'owner_id': ownerId,
       'address': trimmed,
-      'sizeHectares': sizeHectares,
+      'size_hectares': sizeHectares,
       'latitude': latitude,
       'longitude': longitude,
-      'createdAt': FieldValue.serverTimestamp(),
     };
-    final ref = await _service.addFarm(data);
+    final id = await _service.addFarm(data);
     return FarmModel(
-      id: ref.id,
+      id: id,
       address: trimmed,
       sizeHectares: sizeHectares,
       latitude: latitude,
@@ -65,8 +64,7 @@ class FarmRepository {
     );
   }
 
-  /// Overwrites the editable fields of an existing farm. Merge keeps fields
-  /// the form doesn't edit (like `createdAt`) intact.
+  /// Overwrites the editable fields of an existing farm.
   Future<void> updateFarm(FarmModel farm) {
     return _service.updateFarm(farm.id, _farmToMap(farm, ownerId: ownerId));
   }
@@ -85,25 +83,22 @@ class FarmRepository {
     TreeStatus status = TreeStatus.healthy,
   }) async {
     final finalName = name.trim().isEmpty ? 'Cacao tree' : name.trim();
-    final ref = await _service.addTree(
+    final id = await _service.addTree(
       farmId,
-      {
-        ..._treeToMap(
-          CacaoTree(
-            id: '',
-            farmId: farmId,
-            name: finalName,
-            variety: variety,
-            plantedOn: plantedOn,
-            status: status,
-            createdAt: DateTime.now(),
-          ),
+      _treeToMap(
+        CacaoTree(
+          id: '',
+          farmId: farmId,
+          name: finalName,
+          variety: variety,
+          plantedOn: plantedOn,
+          status: status,
+          createdAt: DateTime.now(),
         ),
-        'createdAt': FieldValue.serverTimestamp(),
-      },
+      ),
     );
     return CacaoTree(
-      id: ref.id,
+      id: id,
       farmId: farmId,
       name: finalName,
       variety: variety,
@@ -114,11 +109,11 @@ class FarmRepository {
   }
 
   Future<void> updateTree(CacaoTree tree) {
-    return _service.updateTree(tree.farmId, tree.id, _treeToMap(tree));
+    return _service.updateTree(tree.id, _treeToMap(tree));
   }
 
   Future<void> deleteTree(String farmId, String treeId) {
-    return _service.deleteTree(farmId, treeId);
+    return _service.deleteTree(treeId);
   }
 
   /// Identity of the person who owns the farm. Falls back to a guest id when
@@ -127,30 +122,13 @@ class FarmRepository {
 
   // ── Mapping ────────────────────────────────────────────────────────────
 
-  static FarmModel? _farmFromSnapshot(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    if (!doc.exists) return null;
-    final data = doc.data() ?? const <String, dynamic>{};
+  static FarmModel _farmFromRow(Map<String, dynamic> row) {
     return FarmModel(
-      id: doc.id,
-      address: data['address'] as String? ?? '',
-      sizeHectares: (data['sizeHectares'] as num?)?.toDouble() ?? 0,
-      latitude: (data['latitude'] as num?)?.toDouble(),
-      longitude: (data['longitude'] as num?)?.toDouble(),
-    );
-  }
-
-  static FarmModel _farmFromFirestore(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final data = doc.data();
-    return FarmModel(
-      id: doc.id,
-      address: data['address'] as String? ?? '',
-      sizeHectares: (data['sizeHectares'] as num?)?.toDouble() ?? 0,
-      latitude: (data['latitude'] as num?)?.toDouble(),
-      longitude: (data['longitude'] as num?)?.toDouble(),
+      id: row['id'] as String? ?? '',
+      address: row['address'] as String? ?? '',
+      sizeHectares: (row['size_hectares'] as num?)?.toDouble() ?? 0,
+      latitude: (row['latitude'] as num?)?.toDouble(),
+      longitude: (row['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -159,42 +137,41 @@ class FarmRepository {
     required String ownerId,
   }) {
     return {
-      'ownerId': ownerId,
+      'owner_id': ownerId,
       'address': farm.address,
-      'sizeHectares': farm.sizeHectares,
+      'size_hectares': farm.sizeHectares,
       'latitude': farm.latitude,
       'longitude': farm.longitude,
     };
   }
 
-  static CacaoTree _treeFromFirestore(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final data = doc.data();
+  static CacaoTree _treeFromRow(Map<String, dynamic> row) {
     return CacaoTree(
-      id: doc.id,
-      farmId: data['farmId'] as String? ?? '',
-      name: data['name'] as String? ?? 'Cacao tree',
-      variety: data['variety'] as String?,
-      plantedOn: _parseDate(data['plantedOn']),
-      status: _treeStatus(data['status']),
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      id: row['id'] as String? ?? '',
+      farmId: row['farm_id'] as String? ?? '',
+      name: row['name'] as String? ?? 'Cacao tree',
+      variety: row['variety'] as String?,
+      plantedOn: _parseDate(row['planted_on']),
+      status: _treeStatus(row['status']),
+      createdAt: _parseDate(row['created_at']) ?? DateTime.now(),
     );
   }
 
   static Map<String, dynamic> _treeToMap(CacaoTree tree) {
     return {
-      'farmId': tree.farmId,
+      'farm_id': tree.farmId,
       'name': tree.name,
       'variety': tree.variety,
-      'plantedOn': tree.plantedOn?.toIso8601String(),
+      'planted_on': tree.plantedOn?.toIso8601String(),
       'status': tree.status.name,
     };
   }
 
   static DateTime? _parseDate(Object? value) {
-    if (value is Timestamp) return value.toDate();
-    if (value is String && value.isNotEmpty) return DateTime.tryParse(value);
+    if (value is DateTime) return value.toLocal();
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value)?.toLocal();
+    }
     return null;
   }
 

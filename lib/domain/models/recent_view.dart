@@ -1,6 +1,6 @@
 /// A single entry in the home screen's "Recently viewed" list: which article
 /// the user opened and when. Only the id + timestamp live on-device; the
-/// article's content is always re-fetched live from Firestore by id.
+/// article's content is always re-fetched live from Supabase by id.
 class RecentView {
   final String articleId;
   final DateTime viewedAt;

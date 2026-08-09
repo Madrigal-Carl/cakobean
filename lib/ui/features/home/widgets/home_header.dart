@@ -19,7 +19,7 @@ class HomeHeader extends ConsumerWidget {
         ? null
         : ref.watch(hubUserProvider(authUser.uid)).value;
 
-    // Registered profile first (Firestore `users` doc), then the auth display
+    // Registered profile first (Supabase `users` table), then the auth display
     // name, then a neutral fallback.
     final firstName = (hubProfile?.firstName ?? '').trim();
     final displayParts = (authUser?.displayName ?? '')

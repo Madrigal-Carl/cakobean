@@ -1,6 +1,6 @@
-/// Lifecycle/health status of a cacao tree. Stored in Firestore as the enum
-/// name and mapped back when reading. The UI maps each status to an icon and
-/// theme color via `lib/ui/features/farm/widgets/tree_status.dart`.
+/// Lifecycle/health status of a cacao tree. Stored in the database as the
+/// enum name and mapped back when reading. The UI maps each status to an icon
+/// and theme color via `lib/ui/features/farm/widgets/tree_status.dart`.
 enum TreeStatus {
   /// Growing normally, no issues.
   healthy,

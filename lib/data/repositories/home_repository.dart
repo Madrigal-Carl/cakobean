@@ -6,7 +6,7 @@ import 'package:cakobean/domain/models/recent_view.dart';
 
 /// Persists the home screen's "recently viewed" article history on the device
 /// (SharedPreferences). Stores only article ids + view timestamps; article
-/// content is always re-fetched live from Firestore by id. Reactive state on
+/// content is always re-fetched live from Supabase by id. Reactive state on
 /// top of this lives in the Riverpod [RecentViewsNotifier].
 class HomeRepository {
   HomeRepository({SharedPreferencesAsync? prefs})

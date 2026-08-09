@@ -32,15 +32,20 @@ class ProfilePage extends ConsumerWidget {
         ? null
         : ref.watch(hubUserProvider(user.uid)).value;
 
-    // Registered profile first (Firestore `users` doc), then the auth
+    // Registered profile first (Supabase `users` table), then the auth
     // display name, then a neutral fallback — never the demo farmer.
     final nameParts = (user?.displayName ?? '').trim().split(RegExp(r'\s+'));
     final firstName = hubProfile?.firstName.isNotEmpty == true
         ? hubProfile!.firstName
         : (nameParts.isNotEmpty ? nameParts.first : '');
+    final middleName = hubProfile?.middleName?.isNotEmpty == true
+        ? hubProfile!.middleName
+        : (nameParts.length > 2 ? nameParts[1] : null);
     final lastName = hubProfile?.lastName.isNotEmpty == true
         ? hubProfile!.lastName
         : (nameParts.length > 1 ? nameParts.last : '');
+    // Displayed names are "First Last" — the optional middle name is stored
+    // but not shown.
     final displayName = '$firstName $lastName'.trim();
     final email = user?.email;
     final username = (email == null || email.isEmpty)
@@ -113,7 +118,9 @@ class ProfilePage extends ConsumerWidget {
                     ext: ext,
                     icon: Icons.person_outline_rounded,
                     label: 'Middle Name',
-                    value: 'Not set',
+                    value: (middleName == null || middleName.isEmpty)
+                        ? 'Not set'
+                        : middleName,
                   ),
                   ProfileRow(
                     ext: ext,

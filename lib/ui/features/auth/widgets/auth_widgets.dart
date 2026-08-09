@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
 
@@ -50,6 +51,9 @@ class AuthTextField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final VoidCallback? onSubmitted;
   final ValueChanged<String>? onChanged;
+  final TextAlign? textAlign;
+  final double? letterSpacing;
+  final List<TextInputFormatter>? inputFormatters;
 
   const AuthTextField({
     super.key,
@@ -66,6 +70,9 @@ class AuthTextField extends StatelessWidget {
     this.textInputAction,
     this.onSubmitted,
     this.onChanged,
+    this.textAlign,
+    this.letterSpacing,
+    this.inputFormatters,
   });
 
   @override
@@ -78,10 +85,16 @@ class AuthTextField extends StatelessWidget {
       keyboardType: keyboardType,
       enabled: enabled,
       textInputAction: textInputAction,
+      textAlign: textAlign ?? TextAlign.start,
+      inputFormatters: inputFormatters,
       onFieldSubmitted: onSubmitted == null ? null : (_) => onSubmitted!(),
       onChanged: onChanged,
       validator: validator,
-      style: TextStyle(color: ext.cocoa, fontSize: fontSize),
+      style: TextStyle(
+        color: ext.cocoa,
+        fontSize: fontSize,
+        letterSpacing: letterSpacing,
+      ),
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(color: ext.cocoa50, fontSize: fontSize),

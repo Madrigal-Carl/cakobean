@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/article.dart';
+import 'package:cakobean/ui/core/widgets/add_button.dart';
 import 'package:cakobean/ui/core/widgets/empty_state.dart';
 import 'package:cakobean/ui/core/widgets/page_header.dart';
 import 'package:cakobean/ui/core/widgets/stagger_in.dart';
@@ -57,7 +59,6 @@ class _HubPageState extends ConsumerState<HubPage> {
   }
 
   void _retry() {
-    ref.invalidate(hubSeedProvider);
     ref.invalidate(hubArticlesProvider);
   }
 
@@ -65,16 +66,20 @@ class _HubPageState extends ConsumerState<HubPage> {
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppThemeExtension>()!;
     final articlesAsync = ref.watch(hubArticlesProvider);
-    final seedingAsync = ref.watch(hubSeedProvider);
+    final canAuthor = ref.watch(hubCanAuthorProvider);
 
     final articles = articlesAsync.value ?? const <ArticleModel>[];
     final filtered = _filter(articles);
     final isInitialLoading = articlesAsync.isLoading && filtered.isEmpty;
-    final seedFailed =
-        seedingAsync.hasError && !articlesAsync.hasError && filtered.isEmpty;
 
     return Scaffold(
       backgroundColor: ext.cream,
+      floatingActionButton: canAuthor
+          ? AddButton(
+              ext: ext,
+              onTap: () => context.push('/hub/create-article'),
+            )
+          : null,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -126,13 +131,12 @@ class _HubPageState extends ConsumerState<HubPage> {
               child: switch ((
                 isInitialLoading,
                 articlesAsync.hasError,
-                seedFailed,
                 filtered.isEmpty,
               )) {
-                (true, _, _, _) => const Center(
+                (true, _, _) => const Center(
                     child: CircularProgressIndicator(),
                   ),
-                (_, true, _, _) => EmptyState(
+                (_, true, _) => EmptyState(
                     ext: ext,
                     icon: Icons.cloud_off_rounded,
                     message:
@@ -140,17 +144,7 @@ class _HubPageState extends ConsumerState<HubPage> {
                     actionLabel: 'Retry',
                     onAction: _retry,
                   ),
-                (_, _, true, _) => EmptyState(
-                    ext: ext,
-                    icon: Icons.error_outline_rounded,
-                    message:
-                        'Could not seed the demo data.\nMake sure your '
-                        'Firestore security rules allow reads and writes, '
-                        'then retry.',
-                    actionLabel: 'Retry',
-                    onAction: _retry,
-                  ),
-                (_, _, _, true) => EmptyState(
+                (_, _, true) => EmptyState(
                     ext: ext,
                     icon: Icons.search_off_rounded,
                     message: _query.trim().isEmpty

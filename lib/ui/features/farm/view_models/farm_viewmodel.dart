@@ -10,9 +10,8 @@ final farmRepositoryProvider = Provider<FarmRepository>(
   (ref) => FarmRepository(),
 );
 
-/// Live list of the signed-in user's farms from Firestore. Empty while
-/// signed out. Because Firestore's on-device cache is enabled, this resolves
-/// instantly from cache and re-emits when the network syncs.
+/// Live list of the signed-in user's farms from Supabase. Empty while
+/// signed out. Realtime keeps the list in sync across devices.
 final farmsProvider = StreamProvider<List<FarmModel>>((ref) {
   final auth = ref.watch(authStateProvider).value;
   if (auth == null) return Stream.value(const <FarmModel>[]);

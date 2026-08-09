@@ -11,24 +11,32 @@ final hubRepositoryProvider = Provider<HubRepository>(
   (ref) => HubRepository(),
 );
 
-/// Live article list from Firestore. Because Firestore's on-device cache is
-/// enabled, this resolves instantly from cache and re-emits when the network
-/// syncs — the Hub works offline and stays in sync across devices.
+/// Live article list from Postgres via Realtime. Fetches once and stays in
+/// sync with inserts/updates/deletes, so the Hub updates across devices.
 final hubArticlesProvider = StreamProvider<List<ArticleModel>>(
   (ref) => ref.watch(hubRepositoryProvider).watchArticles(),
-);
-
-/// One-time database seed per seed version. No-op when the database is
-/// already seeded, so demo data is never duplicated, even across restarts.
-/// Kept alive and watched at the app root so it runs once at startup rather
-/// than being re-triggered by hub navigation.
-final hubSeedProvider = FutureProvider<void>(
-  (ref) => ref.watch(hubRepositoryProvider).seedIfNeeded(),
 );
 
 /// Identity of the person acting on the Hub (uid used for likes/comments).
 final hubCurrentUserIdProvider = Provider<String>(
   (ref) => ref.watch(authStateProvider).value?.uid ?? 'guest',
+);
+
+/// Live profile of the signed-in user from the `users` table, used to
+/// resolve their role (e.g. whether they can author articles). Null when
+/// signed out or the profile row hasn't been written yet.
+final hubCurrentUserProvider = StreamProvider<HubUser?>(
+  (ref) {
+    final uid = ref.watch(hubCurrentUserIdProvider);
+    if (uid == 'guest') return Stream.value(null);
+    return ref.watch(hubRepositoryProvider).watchUser(uid);
+  },
+);
+
+/// Live "current user may author articles" flag, derived from the role stored
+/// on their `users` row (set manually in the Supabase table editor for now).
+final hubCanAuthorProvider = Provider<bool>(
+  (ref) => ref.watch(hubCurrentUserProvider).value?.role == hubPanuluyanRole,
 );
 
 /// Live single article, used by the detail page.

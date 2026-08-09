@@ -16,6 +16,7 @@ import 'package:cakobean/ui/features/farm/views/farm_detail.dart';
 import 'package:cakobean/ui/features/farm/views/farm_page.dart';
 import 'package:cakobean/ui/features/home/views/home_page.dart';
 import 'package:cakobean/ui/features/hub/views/article_detail.dart';
+import 'package:cakobean/ui/features/hub/views/create_article_page.dart';
 import 'package:cakobean/ui/features/hub/views/hub_page.dart';
 import 'package:cakobean/ui/features/logistics/views/logistics_page.dart';
 import 'package:cakobean/ui/features/profile/views/profile_page.dart';
@@ -37,7 +38,7 @@ class _AuthRouterRefresh extends ChangeNotifier {
 }
 
 /// Builds the app router. Created as a provider so it can react to the
-/// Firebase auth stream; pages only ever see `routerProvider`.
+/// Supabase auth stream; pages only ever see `routerProvider`.
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authRepositoryProvider);
   final refresh = _AuthRouterRefresh(auth.userStream);
@@ -105,6 +106,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 FadeSlidePage<void>(key: state.pageKey, child: const HubPage()),
             routes: [
+              GoRoute(
+                path: 'create-article',
+                pageBuilder: (context, state) => FadeSlidePage<void>(
+                  key: state.pageKey,
+                  child: const CreateArticlePage(),
+                ),
+              ),
               GoRoute(
                 path: 'article/:id',
                 pageBuilder: (context, state) => FadeSlidePage<void>(

@@ -1,7 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
-/// Firebase-authenticated user, mapped into an app-friendly shape.
-/// UI never talks to [FirebaseAuth] directly — only through [AuthRepository].
+/// Supabase-authenticated user, mapped into an app-friendly shape.
+/// UI never talks to [sb.GoTrueClient] directly — only through [AuthRepository].
 class AuthUser {
   final String uid;
   final String email;
@@ -17,16 +17,20 @@ class AuthUser {
     this.emailVerified = false,
   });
 
-  /// Maps the Firebase [fb.User] into an [AuthUser]. Returns null when there
+  /// Maps the Supabase [sb.User] into an [AuthUser]. Returns null when there
   /// is no signed-in user (e.g. on the initial stream emission after sign-out).
-  static AuthUser? fromFirebase(fb.User? user) {
+  static AuthUser? fromSupabase(sb.User? user) {
     if (user == null) return null;
+    final meta = user.userMetadata;
+    final first = (meta?['first_name'] as String? ?? '').trim();
+    final last = (meta?['last_name'] as String? ?? '').trim();
+    final displayName = '$first $last'.trim();
     return AuthUser(
-      uid: user.uid,
+      uid: user.id,
       email: user.email ?? '',
-      displayName: user.displayName,
-      photoUrl: user.photoURL,
-      emailVerified: user.emailVerified,
+      displayName: displayName.isEmpty ? null : displayName,
+      photoUrl: meta?['avatar_url'] as String?,
+      emailVerified: user.emailConfirmedAt != null,
     );
   }
 }
