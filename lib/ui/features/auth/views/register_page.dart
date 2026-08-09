@@ -70,7 +70,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x6),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x5),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
@@ -81,12 +81,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const SizedBox(height: AppSpacing.x4),
-                        const CaKoBeanLogoHeader(size: 64),
+                        const CaKoBeanLogoHeader(),
                         const SizedBox(height: AppSpacing.x5),
                         Text(
                           'Create Your Account',
                           style: textTheme.headlineMedium?.copyWith(
-                            fontSize: 26,
+                            fontSize: 24,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.x2),
@@ -281,7 +281,7 @@ class _RegisterErrorBanner extends StatelessWidget {
               child: Text(
                 message,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 12,
                   color: ext.cocoa,
                   height: 1.35,
                 ),

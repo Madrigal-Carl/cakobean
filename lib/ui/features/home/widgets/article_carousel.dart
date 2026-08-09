@@ -77,7 +77,7 @@ class _ArticleCarouselState extends State<ArticleCarousel> {
       child: Column(
         children: [
           SizedBox(
-            height: 150,
+            height: 140,
             child: PageView.builder(
               controller: _controller,
               itemCount: articles.length,
@@ -133,9 +133,9 @@ class _ArticleCarouselState extends State<ArticleCarousel> {
                                 article.title,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.25,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.3,
                                 ),
                               ),
                             ],

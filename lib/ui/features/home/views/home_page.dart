@@ -40,7 +40,7 @@ class HomePage extends ConsumerWidget {
                       index: 0,
                       child: Text(
                         'Newest Article',
-                        style: textTheme.headlineSmall,
+                        style: textTheme.headlineSmall?.copyWith(fontSize: 18),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.x2),
@@ -58,7 +58,7 @@ class HomePage extends ConsumerWidget {
                       index: 2,
                       child: Text(
                         'Recent Articles',
-                        style: textTheme.headlineSmall,
+                        style: textTheme.headlineSmall?.copyWith(fontSize: 18),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.x2),
@@ -109,7 +109,7 @@ class _CarouselPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppThemeExtension>()!;
     return Container(
-      height: 150,
+      height: 140,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: ext.sand,
@@ -127,7 +127,7 @@ class _CarouselEmpty extends StatelessWidget {
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppThemeExtension>()!;
     return Container(
-      height: 150,
+      height: 140,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: ext.sand,
@@ -205,6 +205,7 @@ class _EmptyRecent extends StatelessWidget {
           Text(
             'No articles viewed yet',
             style: textTheme.titleMedium?.copyWith(
+              fontSize: 15,
               fontWeight: FontWeight.w700,
               color: ext.cocoa,
             ),
@@ -245,6 +246,7 @@ class _SectionError extends StatelessWidget {
             "Couldn't load articles.",
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: ext.cocoa50,
+              fontSize: 13,
             ),
           ),
           const SizedBox(height: AppSpacing.x3),

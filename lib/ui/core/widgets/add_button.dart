@@ -15,7 +15,7 @@ class AddButton extends StatelessWidget {
     required this.ext,
     this.onTap,
     this.icon = Icons.add_rounded,
-    this.size = 56,
+    this.size = 48,
   });
 
   @override

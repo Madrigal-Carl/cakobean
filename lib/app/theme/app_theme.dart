@@ -256,6 +256,50 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
   }
 }
 
+/// ---- Button styles (shared so every screen inherits the same shape) ----
+class AppButtonStyles {
+  static final BorderRadius _radius =
+      BorderRadius.circular(AppRadius.sm);
+
+  static final ButtonStyle filled = FilledButton.styleFrom(
+    backgroundColor: AppColors.ember,
+    foregroundColor: AppColors.creamLight,
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.x4,
+      vertical: AppSpacing.x3,
+    ),
+    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+    shape: RoundedRectangleBorder(borderRadius: _radius),
+  );
+
+  static final ButtonStyle outlined = OutlinedButton.styleFrom(
+    foregroundColor: AppColors.cocoa50Light,
+    side: const BorderSide(color: AppColors.hairlineLight),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.x4,
+      vertical: AppSpacing.x3,
+    ),
+    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+    shape: RoundedRectangleBorder(borderRadius: _radius),
+  );
+
+  static final ButtonStyle outlinedDark = OutlinedButton.styleFrom(
+    foregroundColor: AppColors.cocoa50Dark,
+    side: const BorderSide(color: AppColors.hairlineDark),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.x4,
+      vertical: AppSpacing.x3,
+    ),
+    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+    shape: RoundedRectangleBorder(borderRadius: _radius),
+  );
+
+  static final ButtonStyle text = TextButton.styleFrom(
+    foregroundColor: AppColors.ember,
+    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+  );
+}
+
 /// ---- Public entry point ----
 class AppTheme {
   static ThemeData get light {
@@ -294,6 +338,10 @@ class AppTheme {
         AppColors.cocoa50Light,
       ),
       dividerColor: AppColors.hairlineLight,
+      filledButtonTheme: FilledButtonThemeData(style: AppButtonStyles.filled),
+      outlinedButtonTheme:
+          OutlinedButtonThemeData(style: AppButtonStyles.outlined),
+      textButtonTheme: TextButtonThemeData(style: AppButtonStyles.text),
       extensions: const [ext],
     );
   }
@@ -334,6 +382,10 @@ class AppTheme {
         AppColors.cocoa50Dark,
       ),
       dividerColor: AppColors.hairlineDark,
+      filledButtonTheme: FilledButtonThemeData(style: AppButtonStyles.filled),
+      outlinedButtonTheme:
+          OutlinedButtonThemeData(style: AppButtonStyles.outlinedDark),
+      textButtonTheme: TextButtonThemeData(style: AppButtonStyles.text),
       extensions: const [ext],
     );
   }

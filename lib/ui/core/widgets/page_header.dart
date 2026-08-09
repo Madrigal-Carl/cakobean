@@ -56,7 +56,7 @@ class PageHeader extends StatelessWidget {
               title,
               style: textTheme.headlineMedium?.copyWith(
                 color: Colors.white,
-                fontSize: 26,
+                fontSize: 24,
               ),
             ),
             if (subtitle != null) ...[
@@ -67,6 +67,7 @@ class PageHeader extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: textTheme.bodyMedium?.copyWith(
                   color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 13,
                 ),
               ),
             ],
@@ -75,7 +76,7 @@ class PageHeader extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   color: ext.cream,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x1F000000),
@@ -87,15 +88,15 @@ class PageHeader extends StatelessWidget {
                 child: TextField(
                   controller: searchController,
                   onChanged: onSearchChanged,
-                  style: TextStyle(color: ext.cocoa, fontSize: 15),
+                  style: TextStyle(color: ext.cocoa, fontSize: 14),
                   decoration: InputDecoration(
                     isDense: true,
                     hintText: searchHint,
-                    hintStyle: TextStyle(color: ext.cocoa50, fontSize: 14),
+                    hintStyle: TextStyle(color: ext.cocoa50, fontSize: 13),
                     prefixIcon: Icon(
                       Icons.search_rounded,
                       color: ext.cocoa50,
-                      size: 22,
+                      size: 20,
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(

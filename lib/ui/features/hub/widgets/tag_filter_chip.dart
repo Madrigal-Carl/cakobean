@@ -40,7 +40,7 @@ class TagFilterChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 14, color: selected ? Colors.white : ext.cocoa50),
-            const SizedBox(width: 6),
+            const SizedBox(width: AppSpacing.x2),
             Text(
               label,
               style: TextStyle(

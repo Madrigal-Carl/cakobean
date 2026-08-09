@@ -10,7 +10,7 @@ class CaKoBeanLogoHeader extends StatelessWidget {
   const CaKoBeanLogoHeader({
     super.key,
     this.assetPath = 'assets/images/cakobean_icon.png',
-    this.size = 88,
+    this.size = 56,
   });
 
   @override
@@ -59,8 +59,8 @@ class AuthTextField extends StatelessWidget {
     this.suffixIcon,
     this.keyboardType,
     this.controller,
-    this.verticalPadding = AppSpacing.x4,
-    this.fontSize = 15,
+    this.verticalPadding = AppSpacing.x3,
+    this.fontSize = 14,
     this.validator,
     this.enabled = true,
     this.textInputAction,
@@ -94,23 +94,23 @@ class AuthTextField extends StatelessWidget {
           vertical: verticalPadding,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: BorderSide(color: ext.ember, width: 1.4),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
         ),
       ),
@@ -129,7 +129,7 @@ class AuthGradientButton extends StatelessWidget {
     super.key,
     required this.label,
     required this.onPressed,
-    this.verticalPadding = AppSpacing.x4, // was hardcoded to x4
+    this.verticalPadding = AppSpacing.x3, // was hardcoded to x4
     this.isLoading = false,
   });
 

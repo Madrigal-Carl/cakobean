@@ -29,7 +29,7 @@ class MainLayout extends StatelessWidget {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          height: 68,
+          height: 60,
           decoration: BoxDecoration(
             color: ext.cream,
             border: Border(top: BorderSide(color: ext.hairline)),

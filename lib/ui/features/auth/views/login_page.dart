@@ -51,7 +51,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x6),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x5),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
@@ -61,13 +61,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: AppSpacing.x6),
-                        const CaKoBeanLogoHeader(size: 64),
-                        const SizedBox(height: AppSpacing.x6),
+                        const SizedBox(height: AppSpacing.x5),
+                        const CaKoBeanLogoHeader(),
+                        const SizedBox(height: AppSpacing.x5),
                         Text(
                           'Welcome Back',
                           style: textTheme.headlineMedium?.copyWith(
-                            fontSize: 26,
+                            fontSize: 24,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.x2),
@@ -193,7 +193,7 @@ class _AuthErrorBanner extends StatelessWidget {
               child: Text(
                 message,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 12,
                   color: ext.cocoa,
                   height: 1.35,
                 ),

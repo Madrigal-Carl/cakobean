@@ -91,7 +91,7 @@ class _HubPageState extends ConsumerState<HubPage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.x2),
               child: SizedBox(
-                height: 36,
+                height: 32,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(

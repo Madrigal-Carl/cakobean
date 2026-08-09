@@ -43,17 +43,17 @@ class ArticleCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   child: CachedNetworkImage(
                     imageUrl: article.imageUrl,
-                    width: 84,
-                    height: 84,
+                    width: 64,
+                    height: 64,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      width: 84,
-                      height: 84,
+                      width: 64,
+                      height: 64,
                       color: ext.sand,
                     ),
                     errorWidget: (context, url, error) => Container(
-                      width: 84,
-                      height: 84,
+                      width: 64,
+                      height: 64,
                       color: ext.sand,
                       child: Icon(
                         article.tags.first.icon,
@@ -137,7 +137,7 @@ class _ArticleMeta extends StatelessWidget {
         Text(
           fullName,
           style: TextStyle(
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: FontWeight.w700,
             color: ext.cocoa50,
           ),
@@ -148,7 +148,7 @@ class _ArticleMeta extends StatelessWidget {
           const SizedBox(width: AppSpacing.x1),
           Text(
             timeAgo(createdAt!),
-            style: TextStyle(fontSize: 12.5, color: ext.cocoa50),
+            style: TextStyle(fontSize: 12, color: ext.cocoa50),
           ),
         ],
       ],
@@ -209,12 +209,12 @@ class _StatItem extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 15, color: ext.cocoa50),
+        Icon(icon, size: 13, color: ext.cocoa50),
         const SizedBox(width: 4),
         Text(
           count,
           style: TextStyle(
-            fontSize: 11.5,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
             color: ext.cocoa50,
           ),
@@ -281,7 +281,7 @@ class _MoreTagsChip extends StatelessWidget {
       child: Text(
         '+$count more',
         style: TextStyle(
-          fontSize: 11.5,
+          fontSize: 12,
           fontWeight: FontWeight.w600,
           color: ext.cocoa50,
         ),

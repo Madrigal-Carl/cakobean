@@ -55,7 +55,7 @@ class HomeHeader extends ConsumerWidget {
               greetingName,
               style: textTheme.headlineLarge?.copyWith(
                 color: Colors.white,
-                fontSize: 30,
+                fontSize: 28,
               ),
             ),
             const SizedBox(height: AppSpacing.x2),

@@ -35,7 +35,7 @@ class EmptyState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color: ext.cocoa50,
                 fontWeight: FontWeight.w600,
               ),

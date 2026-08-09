@@ -38,9 +38,9 @@ class ProfileRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontSize: 12.5, color: ext.cocoa50),
+                  style: TextStyle(fontSize: 12, color: ext.cocoa50),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.x1),
                 Text(
                   hasValue ? value! : 'Not set',
                   style: TextStyle(

@@ -59,8 +59,8 @@ class ProfilePage extends ConsumerWidget {
               // ---- Avatar ----
               Center(
                 child: Container(
-                  width: 88,
-                  height: 88,
+                  width: 72,
+                  height: 72,
                   decoration: BoxDecoration(
                     color: AppColors.ember.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
@@ -69,7 +69,7 @@ class ProfilePage extends ConsumerWidget {
                   child: Text(
                     _initialsFor(displayName),
                     style: const TextStyle(
-                      fontSize: 32,
+                      fontSize: 26,
                       fontWeight: FontWeight.w800,
                       color: AppColors.ember,
                     ),
@@ -82,13 +82,16 @@ class ProfilePage extends ConsumerWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,
-                ).textTheme.headlineSmall?.copyWith(color: ext.cocoa),
+                ).textTheme.headlineSmall?.copyWith(
+                  fontSize: 24,
+                  color: ext.cocoa,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 '@$username',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: ext.cocoa50),
+                style: TextStyle(fontSize: 13, color: ext.cocoa50),
               ),
               const SizedBox(height: AppSpacing.x3),
               // ---- Theme mode toggle ----
@@ -155,23 +158,7 @@ class ProfilePage extends ConsumerWidget {
                         .read(recentViewsProvider.notifier)
                         .clear();
                   },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.x3,
-                    ),
-                    side: BorderSide(color: ext.hairline),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                  ),
-                  child: Text(
-                    'Log Out',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: ext.cocoa50,
-                    ),
-                  ),
+                  child: const Text('Log Out'),
                 ),
               ),
               const SizedBox(height: AppSpacing.x6),
