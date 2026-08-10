@@ -8,7 +8,6 @@ import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/hub_user.dart';
 import 'package:cakobean/ui/core/widgets/app_snackbar.dart';
 import 'package:cakobean/ui/features/auth/view_models/auth_viewmodel.dart';
-import 'package:cakobean/ui/features/home/view_models/home_viewmodel.dart';
 import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
 import 'package:cakobean/ui/features/profile/widgets/edit_profile_sheet.dart';
 import 'package:cakobean/ui/features/profile/widgets/profile_row.dart';
@@ -175,13 +174,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppThemeExtension>()!;
     final user = ref.watch(authStateProvider).value;
-    final hubProfile = user == null
-        ? null
-        : ref.watch(hubUserProvider(user.uid)).value;
+    // No signed-in user → the router is about to bounce to /login. Render
+    // nothing instead of a flash of empty names / a "farmer" placeholder.
+    if (user == null) {
+      return Scaffold(backgroundColor: ext.cream, body: const SizedBox());
+    }
+    final hubProfile = ref.watch(hubUserProvider(user.uid)).value;
 
     // Registered profile first (Supabase `users` table), then the auth
     // display name, then a neutral fallback — never the demo farmer.
-    final nameParts = (user?.displayName ?? '').trim().split(RegExp(r'\s+'));
+    final nameParts = (user.displayName ?? '').trim().split(RegExp(r'\s+'));
     final firstName = hubProfile?.firstName.isNotEmpty == true
         ? hubProfile!.firstName
         : (nameParts.isNotEmpty ? nameParts.first : '');
@@ -194,33 +196,25 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     // Displayed names are "First Last" — the optional middle name is stored
     // but not shown.
     final displayName = '$firstName $lastName'.trim();
-    final email = user?.email;
     // Prefer the stored username (set at registration / profile edit), then
-    // fall back to deriving one from the email or first name.
+    // fall back to deriving one from the email local-part.
     final username =
         hubProfile?.username?.isNotEmpty == true
             ? hubProfile!.username!
-            : (email == null || email.isEmpty)
-            ? (firstName.isNotEmpty ? firstName.toLowerCase() : 'farmer')
-            : email.split('@').first;
+            : user.email.split('@').first;
 
     // Profile used for editing: backed by the `users` row when it exists,
     // otherwise derived from the auth user.
-    final HubUser? profile;
-    if (hubProfile != null) {
-      profile = hubProfile;
-    } else if (user != null) {
-      profile = HubUser(
-        uid: user.uid,
-        firstName: firstName,
-        middleName: middleName,
-        lastName: lastName,
-        email: user.email,
-        avatarUrl: user.photoUrl,
-      );
-    } else {
-      profile = null;
-    }
+    final HubUser profile =
+        hubProfile ??
+        HubUser(
+          uid: user.uid,
+          firstName: firstName,
+          middleName: middleName,
+          lastName: lastName,
+          email: user.email,
+          avatarUrl: user.photoUrl,
+        );
 
     return Scaffold(
       backgroundColor: ext.cream,
@@ -236,9 +230,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 child: _ProfileAvatar(
                   ext: ext,
                   initials: _initialsFor(displayName),
-                  imageUrl: _avatarUrlOverride ?? profile?.avatarUrl,
+                  imageUrl: _avatarUrlOverride ?? profile.avatarUrl,
                   hasPhoto:
-                      _avatarUrlOverride != null || profile?.hasPhoto == true,
+                      _avatarUrlOverride != null || profile.hasPhoto,
                   uploading: _uploadingAvatar,
                   onTap: _uploadingAvatar ? null : _changeAvatar,
                 ),
@@ -268,9 +262,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ProfileSection(
                 ext: ext,
                 title: 'About You',
-                onEdit: profile == null
-                    ? null
-                    : () => _editAboutYou(profile!),
+                onEdit: () => _editAboutYou(profile),
                 rows: [
                   ProfileRow(
                     ext: ext,
@@ -309,10 +301,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     await ref
                         .read(authControllerProvider.notifier)
                         .signOut();
-                    // Don't leak the previous account's viewing history.
-                    await ref
-                        .read(recentViewsProvider.notifier)
-                        .clear();
                   },
                   child: const Text('Log Out'),
                 ),

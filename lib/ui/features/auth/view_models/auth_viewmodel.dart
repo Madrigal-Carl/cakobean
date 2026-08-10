@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cakobean/data/repositories/auth_repository.dart';
 import 'package:cakobean/domain/models/auth.dart';
+import 'package:cakobean/ui/features/home/view_models/home_viewmodel.dart';
 import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
 
 /// Provides the single [AuthRepository] instance app-wide.
@@ -164,6 +165,15 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> signOut() async {
+    // Clear per-account state before the auth stream flips to null — the
+    // router bounces to /login the instant it does, disposing the profile
+    // page before any `context`-based cleanup could run.
+    try {
+      await ref.read(recentViewsProvider.notifier).clear();
+    } on Exception catch (e) {
+      // ignore: avoid_print
+      print('Recent views clear failed on sign-out: $e');
+    }
     await ref.read(authRepositoryProvider).signOut();
     state = const AuthState();
   }
