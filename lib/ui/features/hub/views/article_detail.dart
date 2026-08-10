@@ -7,13 +7,11 @@ import 'package:video_player/video_player.dart';
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/article.dart';
 import 'package:cakobean/domain/models/comment.dart';
+import 'package:cakobean/domain/models/hub_user.dart';
 import 'package:cakobean/domain/models/media.dart';
 import 'package:cakobean/ui/core/widgets/stat_chip.dart';
-import 'package:cakobean/ui/features/auth/view_models/auth_viewmodel.dart';
 import 'package:cakobean/ui/features/home/view_models/home_viewmodel.dart';
 import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
-
-const _guestAvatarUrl = 'https://i.pravatar.cc/100?img=68';
 
 class ArticleDetail extends ConsumerStatefulWidget {
   final String articleId;
@@ -84,7 +82,9 @@ class _ArticleDetailState extends ConsumerState<ArticleDetail> {
         ref.watch(hubLikeCountProvider(widget.articleId)).value ?? 0;
     final commentCount =
         ref.watch(hubCommentCountProvider(widget.articleId)).value ?? 0;
-    final authUser = ref.watch(authStateProvider).value;
+    final currentProfile = ref.watch(hubCurrentUserProvider).value;
+    final myAvatarUrl = currentProfile?.avatarUrl;
+    final myInitials = _initialsFor(currentProfile);
 
     final article = articleAsync.value ?? widget.article;
     if (article == null && articleAsync.isLoading) {
@@ -327,7 +327,8 @@ class _ArticleDetailState extends ConsumerState<ArticleDetail> {
           ext: ext,
           controller: _commentController,
           busy: _commentBusy,
-          avatarUrl: authUser?.photoUrl ?? _guestAvatarUrl,
+          avatarUrl: myAvatarUrl,
+          initials: myInitials,
           onSubmit: _submitComment,
         ),
       ),
@@ -649,18 +650,42 @@ class _ReactButton extends StatelessWidget {
   }
 }
 
-class _CommentTile extends StatelessWidget {
+/// First letters of a user's first and last name, e.g. "Carl Madrigal" → "CM".
+/// Used as the fallback avatar content when a user has no photo.
+String _initialsFor(HubUser? user) {
+  final first = user?.firstName.trim() ?? '';
+  final last = user?.lastName.trim() ?? '';
+  final letters = [
+    if (first.isNotEmpty) first[0],
+    if (last.isNotEmpty) last[0],
+  ];
+  return letters.join().toUpperCase();
+}
+
+class _CommentTile extends ConsumerWidget {
   final AppThemeExtension ext;
   final CommentModel comment;
 
   const _CommentTile({required this.ext, required this.comment});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Author identity is resolved live from the `users` table via the id, so
+    // name/avatar edits show up on existing comments too.
+    final authorId = comment.authorId;
+    final author = authorId == null
+        ? null
+        : ref.watch(hubUserProvider(authorId)).value;
+    final name = (author?.fullName.trim().isNotEmpty ?? false)
+        ? author!.fullName
+        : 'Guest';
+    final avatarUrl = author?.avatarUrl;
+    final initials = _initialsFor(author);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Avatar(ext: ext, url: comment.avatarUrl, size: 34),
+        _Avatar(ext: ext, url: avatarUrl, initials: initials, size: 34),
         const SizedBox(width: AppSpacing.x3),
         Expanded(
           child: Column(
@@ -669,7 +694,7 @@ class _CommentTile extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    comment.authorName,
+                    name,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13.5,
@@ -698,16 +723,42 @@ class _CommentTile extends StatelessWidget {
 
 class _Avatar extends StatelessWidget {
   final AppThemeExtension ext;
-  final String url;
+  final String? url;
+  final String initials;
   final double size;
 
-  const _Avatar({required this.ext, required this.url, required this.size});
+  const _Avatar({
+    required this.ext,
+    required this.url,
+    required this.initials,
+    required this.size,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final photoUrl = url;
+    if (photoUrl == null || photoUrl.isEmpty) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: ext.sand,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: size * 0.42,
+            fontWeight: FontWeight.w800,
+            color: AppColors.ember,
+          ),
+        ),
+      );
+    }
     return ClipOval(
       child: CachedNetworkImage(
-        imageUrl: url,
+        imageUrl: photoUrl,
         width: size,
         height: size,
         fit: BoxFit.cover,
@@ -735,7 +786,8 @@ class _CommentComposer extends StatelessWidget {
   final AppThemeExtension ext;
   final TextEditingController controller;
   final bool busy;
-  final String avatarUrl;
+  final String? avatarUrl;
+  final String initials;
   final VoidCallback onSubmit;
 
   const _CommentComposer({
@@ -743,6 +795,7 @@ class _CommentComposer extends StatelessWidget {
     required this.controller,
     required this.busy,
     required this.avatarUrl,
+    required this.initials,
     required this.onSubmit,
   });
 
@@ -766,7 +819,7 @@ class _CommentComposer extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _Avatar(ext: ext, url: avatarUrl, size: 30),
+            _Avatar(ext: ext, url: avatarUrl, initials: initials, size: 30),
             const SizedBox(width: AppSpacing.x2),
             Expanded(
               child: Container(

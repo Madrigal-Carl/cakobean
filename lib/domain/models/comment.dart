@@ -1,21 +1,20 @@
 import 'package:flutter/foundation.dart';
 
+/// A comment on an article. Author info is NOT stored on the comment itself:
+/// the UI resolves the author's full name and avatar from the `users` table
+/// via [authorId], so profile edits are reflected everywhere.
 @immutable
 class CommentModel {
   final String id;
-  final String authorName;
-  final String avatarUrl;
+  final String? authorId;
   final String text;
   final DateTime postedAt;
-  final String? authorId;
 
   const CommentModel({
     required this.id,
-    required this.authorName,
-    required this.avatarUrl,
+    this.authorId,
     required this.text,
     required this.postedAt,
-    this.authorId,
   });
 }
 

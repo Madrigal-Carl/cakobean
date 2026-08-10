@@ -13,15 +13,80 @@ create table if not exists public.users (
   first_name  text not null default '',
   middle_name text,
   last_name   text not null default '',
+  username    text not null,
   email       text not null,
-  avatar_url  text not null default 'https://i.pravatar.cc/100?img=68',
+  avatar_url  text,
   role        text not null default 'farmer',
   created_at  timestamptz not null default now(),
-  unique (email)
+  unique (email),
+  unique (username)
 );
 
 -- Add the column to databases created before middle_name existed.
 alter table public.users add column if not exists middle_name text;
+-- Add the column to databases created before username existed.
+alter table public.users add column if not exists username text;
+-- Avatar is optional (null until the user uploads a photo); remove the old
+-- fallback default and NOT NULL so existing rows keep their avatar but new
+-- users start with none.
+alter table public.users alter column avatar_url drop default;
+alter table public.users alter column avatar_url drop not null;
+
+-- ── Username constraints ──────────────────────────────────────────────────
+-- `username` is the public handle: unique and never null. Rows that already
+-- exist may have NULL or duplicate values, so backfill from the email
+-- local-part, disambiguate collisions, then lock the constraints down.
+-- Idempotent — safe to re-run.
+
+update public.users
+set username = split_part(email, '@', 1)
+where nullif(username, '') is null;
+
+do $$
+declare
+  v_row record;
+  v_base text;
+  v_candidate text;
+  v_suffix int;
+begin
+  for v_row in
+    select id, username
+    from public.users
+    where username is not null
+    order by created_at, id
+  loop
+    if exists (
+      select 1 from public.users x
+      where x.id <> v_row.id and x.username = v_row.username
+    ) then
+      v_base := v_row.username;
+      v_suffix := 0;
+      loop
+        v_suffix := v_suffix + 1;
+        v_candidate := v_base || v_suffix;
+        exit when not exists (
+          select 1 from public.users x
+          where x.username = v_candidate and x.id <> v_row.id
+        );
+      end loop;
+      update public.users set username = v_candidate where id = v_row.id;
+    end if;
+  end loop;
+end $$;
+
+alter table public.users alter column username set not null;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'users_username_key'
+      and conrelid = 'public.users'::regclass
+  ) then
+    alter table public.users add constraint users_username_key unique (username);
+  end if;
+end $$;
 
 create table if not exists public.articles (
   id          uuid primary key default gen_random_uuid(),
@@ -38,12 +103,16 @@ create table if not exists public.comments (
   id          uuid primary key default gen_random_uuid(),
   article_id  uuid not null references public.articles (id) on delete cascade,
   author_id   uuid references public.users (id) on delete set null,
-  author_name text not null default 'Guest',
-  avatar_url  text not null default 'https://i.pravatar.cc/100?img=68',
   text        text not null,
   posted_at   timestamptz not null default now()
 );
 create index if not exists comments_article_id_idx on public.comments (article_id);
+
+-- Author name/avatar are not stored on the comment anymore — they're resolved
+-- from the `users` table via `author_id`, so profile edits propagate to
+-- existing comments. Drop the old denormalized columns.
+alter table public.comments drop column if exists author_name;
+alter table public.comments drop column if exists avatar_url;
 
 -- One row per (article, user) like; the row's existence IS the like.
 create table if not exists public.likes (
@@ -89,17 +158,18 @@ begin
   if new.email_confirmed_at is null then
     return new;
   end if;
-  insert into public.users (id, first_name, middle_name, last_name, email, avatar_url)
+  insert into public.users (id, first_name, middle_name, last_name, username, email, avatar_url)
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'first_name', ''),
     nullif(new.raw_user_meta_data ->> 'middle_name', ''),
     coalesce(new.raw_user_meta_data ->> 'last_name', ''),
-    coalesce(new.email, ''),
     coalesce(
-      new.raw_user_meta_data ->> 'avatar_url',
-      'https://i.pravatar.cc/100?img=68'
-    )
+      nullif(new.raw_user_meta_data ->> 'username', ''),
+      split_part(coalesce(new.email, ''), '@', 1)
+    ),
+    coalesce(new.email, ''),
+    nullif(new.raw_user_meta_data ->> 'avatar_url', '')
   )
   on conflict (id) do nothing;
   return new;
@@ -150,6 +220,9 @@ begin
   end if;
   if nullif(new.last_name, '') is null and nullif(old.last_name, '') is not null then
     new.last_name := old.last_name;
+  end if;
+  if nullif(new.username, '') is null and nullif(old.username, '') is not null then
+    new.username := old.username;
   end if;
   if nullif(new.avatar_url, '') is null and nullif(old.avatar_url, '') is not null then
     new.avatar_url := old.avatar_url;
@@ -323,12 +396,27 @@ create policy "trees delete" on public.trees
 -- counts on change, so every table it listens to must be in the realtime
 -- publication.
 
-alter publication supabase_realtime add table public.users;
-alter publication supabase_realtime add table public.articles;
-alter publication supabase_realtime add table public.comments;
-alter publication supabase_realtime add table public.likes;
-alter publication supabase_realtime add table public.farms;
-alter publication supabase_realtime add table public.trees;
+-- Add tables to the realtime publication idempotently: `ADD TABLE` fails on
+-- re-runs with "relation is already member of publication", so only add tables
+-- that aren't already members.
+do $$
+declare
+  v_table text;
+begin
+  foreach v_table in array array['users', 'articles', 'comments', 'likes', 'farms', 'trees']
+  loop
+    if not exists (
+      select 1
+      from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and schemaname = 'public'
+        and tablename = v_table
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', v_table);
+    end if;
+  end loop;
+end
+$$;
 
 -- ── Storage ───────────────────────────────────────────────────────────────
 -- Public `media` bucket for article photos/videos. Objects are keyed

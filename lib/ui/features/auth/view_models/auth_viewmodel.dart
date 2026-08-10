@@ -40,12 +40,14 @@ class PendingRegistration {
   final String? firstName;
   final String? middleName;
   final String? lastName;
+  final String? username;
 
   const PendingRegistration({
     required this.email,
     this.firstName,
     this.middleName,
     this.lastName,
+    this.username,
   });
 }
 
@@ -76,6 +78,7 @@ class AuthController extends Notifier<AuthState> {
     String? firstName,
     String? middleName,
     String? lastName,
+    String? username,
   }) async {
     state = const AuthState(isLoading: true);
     try {
@@ -87,11 +90,13 @@ class AuthController extends Notifier<AuthState> {
             firstName: firstName,
             middleName: middleName,
             lastName: lastName,
+            username: username,
           );
       await _syncProfile(
         firstName: firstName,
         middleName: middleName,
         lastName: lastName,
+        username: username,
       );
       state = const AuthState();
       return true;
@@ -104,6 +109,7 @@ class AuthController extends Notifier<AuthState> {
           firstName: firstName,
           middleName: middleName,
           lastName: lastName,
+          username: username,
         ),
       );
       return false;
@@ -127,6 +133,7 @@ class AuthController extends Notifier<AuthState> {
         firstName: pending.firstName,
         middleName: pending.middleName,
         lastName: pending.lastName,
+        username: pending.username,
       );
       state = const AuthState();
       return true;
@@ -171,6 +178,7 @@ class AuthController extends Notifier<AuthState> {
     String? firstName,
     String? middleName,
     String? lastName,
+    String? username,
   }) async {
     try {
       await ref
@@ -179,6 +187,7 @@ class AuthController extends Notifier<AuthState> {
             firstName: firstName,
             middleName: middleName,
             lastName: lastName,
+            username: username,
           );
     } on Exception catch (e) {
       // ignore: avoid_print

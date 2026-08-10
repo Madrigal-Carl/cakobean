@@ -4,13 +4,13 @@
 
 -- ── Demo users (fixed ids; not auth accounts, just profiles for demo content)
 
-insert into public.users (id, first_name, middle_name, last_name, email, avatar_url)
+insert into public.users (id, first_name, middle_name, last_name, username, email, avatar_url)
 values
-  ('00000000-0000-0000-0000-000000000001', 'Demo', NULL, 'Farmer', 'demo@cakobean.app', 'https://i.pravatar.cc/100?img=68'),
-  ('00000000-0000-0000-0000-000000000002', 'Rosario', 'Lumaban', 'Domingo', 'rosario@cakobean.app', 'https://i.pravatar.cc/100?img=5'),
-  ('00000000-0000-0000-0000-000000000003', 'Ben', NULL, 'Tugon', 'ben@cakobean.app', 'https://i.pravatar.cc/100?img=12'),
-  ('00000000-0000-0000-0000-000000000004', 'Marites', 'Santos', 'Aquino', 'marites@cakobean.app', 'https://i.pravatar.cc/100?img=32'),
-  ('00000000-0000-0000-0000-000000000005', 'Junjun', NULL, 'Panganiban', 'junjun@cakobean.app', 'https://i.pravatar.cc/100?img=18')
+  ('00000000-0000-0000-0000-000000000001', 'Demo', NULL, 'Farmer', 'demo', 'demo@cakobean.app', NULL),
+  ('00000000-0000-0000-0000-000000000002', 'Rosario', 'Lumaban', 'Domingo', 'rosario', 'rosario@cakobean.app', NULL),
+  ('00000000-0000-0000-0000-000000000003', 'Ben', NULL, 'Tugon', 'ben', 'ben@cakobean.app', NULL),
+  ('00000000-0000-0000-0000-000000000004', 'Marites', 'Santos', 'Aquino', 'marites', 'marites@cakobean.app', NULL),
+  ('00000000-0000-0000-0000-000000000005', 'Junjun', NULL, 'Panganiban', 'junjun', 'junjun@cakobean.app', NULL)
 on conflict (id) do nothing;
 
 -- ── Demo articles
@@ -119,14 +119,12 @@ on conflict (id) do nothing;
 -- ── Demo comments
 
 insert into public.comments
-  (id, article_id, author_id, author_name, avatar_url, text, posted_at)
+  (id, article_id, author_id, text, posted_at)
 values
   (
     '00000000-0000-0000-0000-000000000201',
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000002',
-    'Rosario D.',
-    'https://i.pravatar.cc/100?img=5',
     'Tried this on my 2-hectare plot last season, soil moisture held up way better than expected.',
     '2026-07-28 09:15:00+00'
   ),
@@ -134,8 +132,6 @@ values
     '00000000-0000-0000-0000-000000000202',
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000003',
-    'Ben T.',
-    'https://i.pravatar.cc/100?img=12',
     'What spacing did you use between the shade trees and the cacao rows?',
     '2026-07-28 14:40:00+00'
   ),
@@ -143,8 +139,6 @@ values
     '00000000-0000-0000-0000-000000000203',
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000004',
-    'Marites A.',
-    'https://i.pravatar.cc/100?img=32',
     'Great breakdown, sharing this with our cooperative.',
     '2026-07-29 08:02:00+00'
   ),
@@ -152,8 +146,6 @@ values
     '00000000-0000-0000-0000-000000000204',
     '00000000-0000-0000-0000-000000000102',
     '00000000-0000-0000-0000-000000000005',
-    'Junjun P.',
-    'https://i.pravatar.cc/100?img=18',
     'The pheromone trap tip alone saved half my crop this season.',
     '2026-07-27 18:05:00+00'
   )

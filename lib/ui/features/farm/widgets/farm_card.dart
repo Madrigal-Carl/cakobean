@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/farm.dart';
+import 'package:cakobean/ui/core/widgets/app_snackbar.dart';
 import 'package:cakobean/ui/core/widgets/confirm_dialog.dart';
 import 'package:cakobean/ui/core/widgets/pressable_scale.dart';
 import 'package:cakobean/ui/core/widgets/stat_chip.dart';
@@ -35,11 +36,20 @@ class FarmCard extends ConsumerWidget {
           longitude: result.location?.longitude,
         ),
       );
+      if (context.mounted) {
+        showAppSnackbar(
+          context,
+          'Farm updated.',
+          kind: SnackbarKind.success,
+        );
+      }
     } on Exception catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        showAppSnackbar(
           context,
-        ).showSnackBar(SnackBar(content: Text('Couldn\'t update farm: $e')));
+          'Couldn\'t update farm: $e',
+          kind: SnackbarKind.error,
+        );
       }
     }
   }
@@ -56,11 +66,20 @@ class FarmCard extends ConsumerWidget {
     if (confirmed != true) return;
     try {
       await ref.read(farmRepositoryProvider).deleteFarm(farm.id);
+      if (context.mounted) {
+        showAppSnackbar(
+          context,
+          'Farm deleted.',
+          kind: SnackbarKind.success,
+        );
+      }
     } on Exception catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        showAppSnackbar(
           context,
-        ).showSnackBar(SnackBar(content: Text('Couldn\'t delete farm: $e')));
+          'Couldn\'t delete farm: $e',
+          kind: SnackbarKind.error,
+        );
       }
     }
   }

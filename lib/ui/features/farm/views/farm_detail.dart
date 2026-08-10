@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/cacao_tree.dart';
 import 'package:cakobean/domain/models/farm.dart';
+import 'package:cakobean/ui/core/widgets/app_snackbar.dart';
 import 'package:cakobean/ui/core/widgets/confirm_dialog.dart';
 import 'package:cakobean/ui/core/widgets/empty_state.dart';
 import 'package:cakobean/ui/core/widgets/pressable_scale.dart';
@@ -29,13 +30,6 @@ class FarmDetail extends ConsumerStatefulWidget {
 class _FarmDetailState extends ConsumerState<FarmDetail> {
   final _mapController = MapController();
 
-  void _showSnack(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   Future<void> _edit(FarmModel farm) async {
     final result = await showFarmSheet(context, farm: farm);
     if (result == null) return;
@@ -49,8 +43,21 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
           longitude: result.location?.longitude,
         ),
       );
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Farm updated.',
+          kind: SnackbarKind.success,
+        );
+      }
     } on Exception catch (e) {
-      _showSnack('Couldn\'t update farm: $e');
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Couldn\'t update farm: $e',
+          kind: SnackbarKind.error,
+        );
+      }
     }
   }
 
@@ -65,8 +72,21 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
             plantedOn: result.plantedOn,
             status: result.status,
           );
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Tree added.',
+          kind: SnackbarKind.success,
+        );
+      }
     } on Exception catch (e) {
-      _showSnack('Couldn\'t add tree: $e');
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Couldn\'t add tree: $e',
+          kind: SnackbarKind.error,
+        );
+      }
     }
   }
 
@@ -82,8 +102,21 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
           status: result.status,
         ),
       );
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Tree updated.',
+          kind: SnackbarKind.success,
+        );
+      }
     } on Exception catch (e) {
-      _showSnack('Couldn\'t update tree: $e');
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Couldn\'t update tree: $e',
+          kind: SnackbarKind.error,
+        );
+      }
     }
   }
 
@@ -94,8 +127,21 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
       await ref
           .read(farmRepositoryProvider)
           .updateTree(tree.copyWith(status: next));
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Status updated.',
+          kind: SnackbarKind.success,
+        );
+      }
     } on Exception catch (e) {
-      _showSnack('Couldn\'t update status: $e');
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Couldn\'t update status: $e',
+          kind: SnackbarKind.error,
+        );
+      }
     }
   }
 
@@ -112,8 +158,21 @@ class _FarmDetailState extends ConsumerState<FarmDetail> {
       await ref
           .read(farmRepositoryProvider)
           .deleteTree(tree.farmId, tree.id);
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Tree removed.',
+          kind: SnackbarKind.success,
+        );
+      }
     } on Exception catch (e) {
-      _showSnack('Couldn\'t remove tree: $e');
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Couldn\'t remove tree: $e',
+          kind: SnackbarKind.error,
+        );
+      }
     }
   }
 

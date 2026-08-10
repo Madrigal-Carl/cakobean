@@ -1,21 +1,42 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:cakobean/app/theme/app_theme.dart';
+import 'package:cakobean/domain/models/hub_user.dart';
+import 'package:cakobean/ui/core/widgets/app_snackbar.dart';
 import 'package:cakobean/ui/features/auth/view_models/auth_viewmodel.dart';
 import 'package:cakobean/ui/features/home/view_models/home_viewmodel.dart';
 import 'package:cakobean/ui/features/hub/view_models/hub_viewmodel.dart';
+import 'package:cakobean/ui/features/profile/widgets/edit_profile_sheet.dart';
 import 'package:cakobean/ui/features/profile/widgets/profile_row.dart';
 import 'package:cakobean/ui/features/profile/widgets/profile_section.dart';
 import 'package:cakobean/ui/features/profile/widgets/theme_mode_toggle.dart';
 
-class ProfilePage extends ConsumerWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$feature — coming soon')));
+  @override
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends ConsumerState<ProfilePage> {
+  final _picker = ImagePicker();
+  bool _uploadingAvatar = false;
+
+  /// Latest uploaded avatar URL. Kept locally so the picture updates the
+  /// instant an upload finishes, without waiting for the live profile stream
+  /// (Realtime) to re-emit.
+  String? _avatarUrlOverride;
+
+  /// Forces the profile stream to re-fetch the current `users` row so the
+  /// page — and anything else watching it — reflects saved changes even if
+  /// the Realtime change event hasn't arrived.
+  void _refreshProfile() {
+    final uid = ref.read(authStateProvider).value?.uid;
+    if (uid != null) ref.invalidate(hubUserProvider(uid));
   }
 
   String _initialsFor(String name) {
@@ -24,8 +45,134 @@ class ProfilePage extends ConsumerWidget {
     return letters.join().toUpperCase();
   }
 
+  /// Opens the name/username editor, then persists the changes to the `users`
+  /// table. The live profile stream reflects the update automatically.
+  Future<void> _editAboutYou(HubUser profile) async {
+    final result = await showEditProfileSheet(
+      context,
+      firstName: profile.firstName,
+      middleName: profile.middleName,
+      lastName: profile.lastName,
+      username: profile.username ?? '',
+    );
+    if (result == null) return;
+    try {
+      await ref.read(hubRepositoryProvider).updateProfileNames(
+            firstName: result.firstName,
+            middleName: result.middleName,
+            lastName: result.lastName,
+            username: result.username,
+          );
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Profile updated.',
+          kind: SnackbarKind.success,
+        );
+        _refreshProfile();
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Could not save changes: $e',
+          kind: SnackbarKind.error,
+        );
+      }
+    }
+  }
+
+  /// Lets the user pick a photo (camera/gallery), uploads it to Storage and
+  /// updates their `users` row so the avatar reflects the new picture.
+  Future<void> _changeAvatar() async {
+    final source = await _showAvatarSourceSheet();
+    if (source == null || !mounted) return;
+
+    final XFile? picked;
+    try {
+      picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        imageQuality: 85,
+      );
+    } catch (_) {
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Could not open the photo picker.',
+          kind: SnackbarKind.error,
+        );
+      }
+      return;
+    }
+    if (picked == null || !mounted) return;
+
+    setState(() => _uploadingAvatar = true);
+    try {
+      final url = await ref.read(hubRepositoryProvider).updateAvatar(
+            File(picked.path),
+            filename: picked.name,
+          );
+      if (!mounted) return;
+      setState(() => _avatarUrlOverride = url);
+      showAppSnackbar(
+        context,
+        'Profile picture updated.',
+        kind: SnackbarKind.success,
+      );
+      _refreshProfile();
+    } on Exception catch (e) {
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Could not update picture: $e',
+          kind: SnackbarKind.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
+  }
+
+  Future<ImageSource?> _showAvatarSourceSheet() async {
+    final ext = Theme.of(context).extension<AppThemeExtension>()!;
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: ext.cardSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppSpacing.x4),
+            Text(
+              'Profile picture',
+              style: Theme.of(
+                sheetContext,
+              ).textTheme.headlineSmall?.copyWith(fontSize: 17),
+            ),
+            const SizedBox(height: AppSpacing.x2),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+            const SizedBox(height: AppSpacing.x2),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppThemeExtension>()!;
     final user = ref.watch(authStateProvider).value;
     final hubProfile = user == null
@@ -48,9 +195,32 @@ class ProfilePage extends ConsumerWidget {
     // but not shown.
     final displayName = '$firstName $lastName'.trim();
     final email = user?.email;
-    final username = (email == null || email.isEmpty)
-        ? (firstName.isNotEmpty ? firstName.toLowerCase() : 'farmer')
-        : email.split('@').first;
+    // Prefer the stored username (set at registration / profile edit), then
+    // fall back to deriving one from the email or first name.
+    final username =
+        hubProfile?.username?.isNotEmpty == true
+            ? hubProfile!.username!
+            : (email == null || email.isEmpty)
+            ? (firstName.isNotEmpty ? firstName.toLowerCase() : 'farmer')
+            : email.split('@').first;
+
+    // Profile used for editing: backed by the `users` row when it exists,
+    // otherwise derived from the auth user.
+    final HubUser? profile;
+    if (hubProfile != null) {
+      profile = hubProfile;
+    } else if (user != null) {
+      profile = HubUser(
+        uid: user.uid,
+        firstName: firstName,
+        middleName: middleName,
+        lastName: lastName,
+        email: user.email,
+        avatarUrl: user.photoUrl,
+      );
+    } else {
+      profile = null;
+    }
 
     return Scaffold(
       backgroundColor: ext.cream,
@@ -61,24 +231,16 @@ class ProfilePage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: AppSpacing.x6),
-              // ---- Avatar ----
+              // ---- Avatar (tap to change) ----
               Center(
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: AppColors.ember.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    _initialsFor(displayName),
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.ember,
-                    ),
-                  ),
+                child: _ProfileAvatar(
+                  ext: ext,
+                  initials: _initialsFor(displayName),
+                  imageUrl: _avatarUrlOverride ?? profile?.avatarUrl,
+                  hasPhoto:
+                      _avatarUrlOverride != null || profile?.hasPhoto == true,
+                  uploading: _uploadingAvatar,
+                  onTap: _uploadingAvatar ? null : _changeAvatar,
                 ),
               ),
               const SizedBox(height: AppSpacing.x4),
@@ -106,7 +268,9 @@ class ProfilePage extends ConsumerWidget {
               ProfileSection(
                 ext: ext,
                 title: 'About You',
-                onEdit: () => _showComingSoon(context, 'Editing About You'),
+                onEdit: profile == null
+                    ? null
+                    : () => _editAboutYou(profile!),
                 rows: [
                   ProfileRow(
                     ext: ext,
@@ -128,26 +292,11 @@ class ProfilePage extends ConsumerWidget {
                     label: 'Last Name',
                     value: lastName.isEmpty ? 'Not set' : lastName,
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.x5),
-              // ---- Account ----
-              ProfileSection(
-                ext: ext,
-                title: 'Account',
-                onEdit: () => _showComingSoon(context, 'Editing Account'),
-                rows: [
                   ProfileRow(
                     ext: ext,
                     icon: Icons.alternate_email_rounded,
                     label: 'Username',
                     value: '@$username',
-                  ),
-                  ProfileRow(
-                    ext: ext,
-                    icon: Icons.email_outlined,
-                    label: 'Email',
-                    value: user?.email ?? 'Not set',
                   ),
                 ],
               ),
@@ -171,6 +320,114 @@ class ProfilePage extends ConsumerWidget {
               const SizedBox(height: AppSpacing.x6),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Circular avatar with a camera badge in the corner. Shows the uploaded
+/// photo when the user has one, otherwise their initials. While a new photo
+/// is uploading a spinner covers it.
+class _ProfileAvatar extends StatelessWidget {
+  final AppThemeExtension ext;
+  final String initials;
+  final String? imageUrl;
+  final bool hasPhoto;
+  final bool uploading;
+  final VoidCallback? onTap;
+
+  const _ProfileAvatar({
+    required this.ext,
+    required this.initials,
+    this.imageUrl,
+    this.hasPhoto = false,
+    this.uploading = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 96,
+        height: 96,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            ClipOval(
+              child: Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  color: ext.sand,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: ext.hairline, width: 1.5),
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (hasPhoto && imageUrl != null)
+                      Image.network(
+                        imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => _initialsBox(),
+                      )
+                    else
+                      _initialsBox(),
+                    if (uploading)
+                      ColoredBox(
+                        color: Colors.black38,
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: AppColors.creamLight,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.ember,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: ext.cream, width: 2),
+                ),
+                child: const Icon(
+                  Icons.photo_camera_rounded,
+                  size: 14,
+                  color: AppColors.creamLight,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _initialsBox() {
+    return Container(
+      alignment: Alignment.center,
+      color: AppColors.ember.withValues(alpha: 0.12),
+      child: Text(
+        initials,
+        style: const TextStyle(
+          fontSize: 30,
+          fontWeight: FontWeight.w800,
+          color: AppColors.ember,
         ),
       ),
     );

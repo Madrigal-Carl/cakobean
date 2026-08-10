@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/farm.dart';
 import 'package:cakobean/ui/core/widgets/add_button.dart';
+import 'package:cakobean/ui/core/widgets/app_snackbar.dart';
 import 'package:cakobean/ui/core/widgets/empty_state.dart';
 import 'package:cakobean/ui/core/widgets/page_header.dart';
 import 'package:cakobean/ui/core/widgets/stagger_in.dart';
@@ -46,11 +47,20 @@ class _FarmPageState extends ConsumerState<FarmPage> {
             latitude: result.location?.latitude,
             longitude: result.location?.longitude,
           );
+      if (mounted) {
+        showAppSnackbar(
+          context,
+          'Farm added.',
+          kind: SnackbarKind.success,
+        );
+      }
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        showAppSnackbar(
           context,
-        ).showSnackBar(SnackBar(content: Text('Couldn\'t add farm: $e')));
+          'Couldn\'t add farm: $e',
+          kind: SnackbarKind.error,
+        );
       }
     }
   }

@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cakobean/app/theme/app_theme.dart';
 import 'package:cakobean/domain/models/article.dart';
 import 'package:cakobean/domain/models/media.dart';
+import 'package:cakobean/ui/core/widgets/app_snackbar.dart';
 import 'package:cakobean/ui/core/widgets/empty_state.dart';
 import 'package:cakobean/ui/features/farm/widgets/form_field.dart';
 import 'package:cakobean/ui/features/home/view_models/home_viewmodel.dart';
@@ -145,8 +146,10 @@ class _CreateArticlePageState extends ConsumerState<CreateArticlePage> {
       ref.invalidate(hubArticlesProvider);
       ref.invalidate(newestArticlesProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Article published')),
+        showAppSnackbar(
+          context,
+          'Article published',
+          kind: SnackbarKind.success,
         );
         context.pop();
       }

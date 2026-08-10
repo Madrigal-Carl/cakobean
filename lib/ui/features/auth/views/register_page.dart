@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,7 +23,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
-  final _otpController = TextEditingController();
+  String _enteredCode = '';
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
@@ -37,7 +36,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
-    _otpController.dispose();
     super.dispose();
   }
 
@@ -57,6 +55,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           firstName: firstName,
           middleName: middleName,
           lastName: lastName,
+          username: _usernameController.text.trim(),
         );
     if (ok && mounted) context.go('/home');
   }
@@ -67,7 +66,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     final ok = await ref
         .read(authControllerProvider.notifier)
-        .confirmRegistration(code: _otpController.text.trim());
+        .confirmRegistration(code: _enteredCode);
     if (ok && mounted) context.go('/home');
   }
 
@@ -308,27 +307,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       style: textTheme.bodyMedium?.copyWith(fontSize: 13),
                     ),
                     const SizedBox(height: AppSpacing.x4),
-                    AuthTextField(
-                      hintText: 'Enter code',
-                      icon: Icons.sms_outlined,
-                      controller: _otpController,
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.done,
-                      verticalPadding: AppSpacing.x3,
-                      fontSize: 20,
-                      letterSpacing: 6,
-                      textAlign: TextAlign.center,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(8),
-                      ],
+                    OtpInputField(
                       enabled: !isLoading,
-                      onChanged: (_) => clearError(),
-                      onSubmitted: _verify,
+                      onChanged: (code) {
+                        _enteredCode = code;
+                        clearError();
+                      },
+                      onCompleted: _verify,
                       validator: (v) {
                         final code = v?.trim() ?? '';
-                        if (code.length < 6 || code.length > 8) {
-                          return 'Enter the code from your email';
+                        if (code.length != 6) {
+                          return 'Enter the 6-digit code from your email';
                         }
                         return null;
                       },

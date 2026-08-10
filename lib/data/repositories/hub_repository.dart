@@ -86,7 +86,9 @@ class HubRepository {
   }
 
   /// Adds a comment as the current user and returns it so the UI can show it
-  /// immediately while the live stream catches up.
+  /// immediately while the live stream catches up. Only the author's id is
+  /// stored — their name/avatar are resolved from the `users` table at render
+  /// time, so profile edits propagate to existing comments.
   Future<CommentModel> addComment({
     required String articleId,
     required String text,
@@ -99,8 +101,6 @@ class HubRepository {
     final postedAt = DateTime.now();
     final data = <String, dynamic>{
       'author_id': user?.uid ?? _guestUserId,
-      'author_name': _authorNameFor(user?.displayName),
-      'avatar_url': user?.photoUrl ?? _guestAvatarUrl,
       'text': trimmed,
       'posted_at': postedAt.toUtc().toIso8601String(),
     };
@@ -108,8 +108,6 @@ class HubRepository {
     return CommentModel(
       id: id,
       authorId: data['author_id'] as String,
-      authorName: data['author_name'] as String,
-      avatarUrl: data['avatar_url'] as String,
       text: trimmed,
       postedAt: postedAt,
     );
@@ -162,20 +160,75 @@ class HubRepository {
     return _service.upsertUser(user.uid, _userToMap(user));
   }
 
+  /// Updates the signed-in user's display name fields in the `users` table,
+  /// writing the edited values verbatim — including clearing an optional
+  /// middle name. Kept separate from [saveUser] so the registration/sign-in
+  /// sync can keep skipping empty fields while an explicit edit always lands.
+  Future<void> updateProfileNames({
+    required String firstName,
+    String? middleName,
+    required String lastName,
+    String? username,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('You must be signed in to update your profile.');
+    }
+    final middle = middleName?.trim() ?? '';
+    await _service.upsertUser(user.uid, {
+      'first_name': firstName.trim(),
+      'middle_name': middle.isEmpty ? null : middle,
+      'last_name': lastName.trim(),
+      if (username != null && username.trim().isNotEmpty)
+        'username': username.trim(),
+      'email': user.email,
+    });
+  }
+
+  /// Uploads a new profile picture for the signed-in user and updates their
+  /// `users` row with the permanent public URL. The live profile stream picks
+  /// the change up automatically.
+  Future<String> updateAvatar(File file, {String filename = 'avatar.jpg'}) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('You must be signed in to change your profile picture.');
+    }
+    final url = await _storage.uploadMedia(
+      filename: filename,
+      file: file,
+      uid: user.uid,
+    );
+    // `email` is included because `users.email` is NOT NULL: PostgREST's
+    // upsert still evaluates the INSERT branch (even on conflict), which
+    // would otherwise fail with a null-constraint violation.
+    await _service.upsertUser(user.uid, {
+      'avatar_url': url,
+      'email': user.email,
+    });
+    return url;
+  }
+
   /// Upserts the currently signed-in user into the `users` table. Called
   /// after registration and sign-in so a real (non-demo) user's profile is
   /// available to resolve their authored content. [firstName]/[middleName]/
-  /// [lastName] come from the registration form; otherwise they're derived
-  /// from the auth display name (e.g. on later sign-ins).
+  /// [lastName]/[username] come from the registration form; otherwise they're
+  /// derived from the auth display name (e.g. on later sign-ins).
   Future<void> saveCurrentUser({
     String? firstName,
     String? middleName,
     String? lastName,
+    String? username,
   }) async {
     final user = _auth.currentUser;
     if (user == null) return;
     await saveUser(
-      _userFor(user, firstName: firstName, middleName: middleName, lastName: lastName),
+      _userFor(
+        user,
+        firstName: firstName,
+        middleName: middleName,
+        lastName: lastName,
+        username: username,
+      ),
     );
   }
 
@@ -187,15 +240,6 @@ class HubRepository {
 
   static const _guestUserId = 'guest';
 
-  /// Fallback avatar used when a user has no photo.
-  static const defaultAvatarUrl = 'https://i.pravatar.cc/100?img=68';
-  static const _guestAvatarUrl = defaultAvatarUrl;
-
-  static String _authorNameFor(String? displayName) {
-    final name = displayName?.trim() ?? '';
-    return name.isEmpty ? 'Guest' : name;
-  }
-
   /// Builds a [HubUser] from the signed-in auth user. Prefers explicit
   /// [firstName]/[middleName]/[lastName] (registration form); falls back to
   /// splitting the auth display name for users who registered before profiles
@@ -205,11 +249,13 @@ class HubRepository {
     String? firstName,
     String? middleName,
     String? lastName,
+    String? username,
   }) {
     final parts = (user.displayName ?? '').trim().split(RegExp(r'\s+'));
     final first = (firstName ?? '').trim();
     final middle = (middleName ?? '').trim();
     final last = (lastName ?? '').trim();
+    final handle = (username ?? '').trim();
     return HubUser(
       uid: user.uid,
       firstName: first.isNotEmpty
@@ -219,8 +265,9 @@ class HubRepository {
           ? middle
           : (parts.length > 2 ? parts[1] : null),
       lastName: last.isNotEmpty ? last : (parts.length > 1 ? parts.last : ''),
+      username: handle.isNotEmpty ? handle : user.email.split('@').first,
       email: user.email,
-      avatarUrl: user.photoUrl ?? defaultAvatarUrl,
+      avatarUrl: user.photoUrl,
       createdAt: DateTime.now(),
     );
   }
@@ -245,8 +292,6 @@ class HubRepository {
     return CommentModel(
       id: row['id'] as String? ?? '',
       authorId: row['author_id'] as String?,
-      authorName: row['author_name'] as String? ?? 'Guest',
-      avatarUrl: row['avatar_url'] as String? ?? _guestAvatarUrl,
       text: row['text'] as String? ?? '',
       postedAt: _parseDateTime(row['posted_at']) ?? DateTime.now(),
     );
@@ -262,8 +307,10 @@ class HubRepository {
       if (user.middleName != null && user.middleName!.trim().isNotEmpty)
         'middle_name': user.middleName,
       if (user.lastName.trim().isNotEmpty) 'last_name': user.lastName,
+      if (user.username != null && user.username!.trim().isNotEmpty)
+        'username': user.username,
       if (user.email.trim().isNotEmpty) 'email': user.email,
-      if (user.avatarUrl.isNotEmpty && user.avatarUrl != defaultAvatarUrl)
+      if (user.avatarUrl != null && user.avatarUrl!.trim().isNotEmpty)
         'avatar_url': user.avatarUrl,
     };
   }
@@ -275,8 +322,9 @@ class HubRepository {
       firstName: row['first_name'] as String? ?? '',
       middleName: row['middle_name'] as String?,
       lastName: row['last_name'] as String? ?? '',
+      username: row['username'] as String?,
       email: row['email'] as String? ?? '',
-      avatarUrl: row['avatar_url'] as String? ?? _guestAvatarUrl,
+      avatarUrl: row['avatar_url'] as String?,
       role: row['role'] as String? ?? hubDefaultRole,
       createdAt: _parseDateTime(row['created_at']),
     );

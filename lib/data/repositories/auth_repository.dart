@@ -65,6 +65,7 @@ class AuthRepository {
     String? firstName,
     String? middleName,
     String? lastName,
+    String? username,
   }) async {
     try {
       final response = await _service.registerWithEmail(
@@ -74,6 +75,7 @@ class AuthRepository {
           'first_name': firstName,
           'middle_name': middleName,
           'last_name': lastName,
+          'username': username,
         },
       );
       if (response.session == null) {
